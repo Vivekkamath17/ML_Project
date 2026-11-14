@@ -1,0 +1,120 @@
+metadata:
+  target: label_dropout_k3
+  horizon_k: 3
+  derived_split: 2014B (Validation)
+  frozen_note: Frozen on validation split 2014B. Never re-derived per week or module.
+  recommended_dashboard_default: capacity_top10
+  recommendation_rationale: Capacity Top-10% matches realistic institutional advisor
+    capacity constraints. It flags 10% of enrolled eligible learners each week, achieving
+    13.9% precision (5.9x base rate), and captures 71.2% of all eventual dropouts
+    across the course while strictly capping weekly caseload.
+policies:
+  mcc_optimal:
+    threshold: 0.025
+    precision: 0.063
+    recall: 0.6098
+    f1: 0.1142
+    mcc: 0.1411
+    pct_flagged: 22.9
+  cost_optimal_r5:
+    r: 5
+    threshold: 0.265
+    precision: 0.2619
+    recall: 0.0028
+    f1: 0.0056
+    mcc: 0.025
+    pct_flagged: 0.03
+  cost_optimal_r10:
+    r: 10
+    threshold: 0.095
+    precision: 0.1195
+    recall: 0.0936
+    f1: 0.1049
+    mcc: 0.0866
+    pct_flagged: 1.85
+  capacity_top5:
+    k_pct: 0.05
+    overall_precision: 0.0968
+    overall_recall: 0.2048
+    unique_learners_flagged: 1453
+    eventual_dropout_capture_rate: 0.372
+  capacity_top10:
+    k_pct: 0.1
+    overall_precision: 0.0842
+    overall_recall: 0.3558
+    unique_learners_flagged: 2304
+    eventual_dropout_capture_rate: 0.5563
+frozen_thresholds_per_k:
+  k2:
+    threshold: 0.014936708860759495
+    mcc: 0.11714956035871006
+    horizon: 2
+  k3:
+    threshold: 0.025
+    mcc: 0.1411
+    horizon: 3
+  k4:
+    threshold: 0.03468354430379747
+    mcc: 0.15302087471340764
+    horizon: 4
+lead_time_metrics:
+- policy: MCC-Optimal (th=0.025)
+  share_all_learners_flagged: 0.6345381526104418
+  share_withdrawn_flagged: 0.8206599713055954
+  flagged_ge_1w: 1.0
+  flagged_ge_2w: 0.9300699300699301
+  median_lead_weeks: 11.0
+- policy: Cost r=10 (th=0.095)
+  share_all_learners_flagged: 0.12604263206672844
+  share_withdrawn_flagged: 0.2309899569583931
+  flagged_ge_1w: 1.0
+  flagged_ge_2w: 0.9161490683229814
+  median_lead_weeks: 8.0
+- policy: Cost r=5 (th=0.265)
+  share_all_learners_flagged: 0.003243744207599629
+  share_withdrawn_flagged: 0.007890961262553802
+  flagged_ge_1w: 1.0
+  flagged_ge_2w: 0.8181818181818182
+  median_lead_weeks: 7.0
+- policy: Capacity Top-10% / Week
+  share_all_learners_flagged: 0.35588507877664505
+  share_withdrawn_flagged: 0.5566714490674318
+  flagged_ge_1w: 1.0
+  flagged_ge_2w: 0.9162371134020618
+  median_lead_weeks: 9.0
+official_champion_v3:
+  model_file: models/baselines/lgbm_champion_v3_official.txt
+  n_features: 38
+  excluded_feature: n_skipped_resources
+  hyperparameters:
+    num_leaves: 50
+    max_depth: 3
+    learning_rate: 0.06664
+    min_child_samples: 352
+    feature_fraction: 0.6073
+    bagging_fraction: 0.8478
+    bagging_freq: 1
+    lambda_l1: 8.408
+    lambda_l2: 8.203
+    n_estimators: 463
+    scale_pos_weight: 1.0
+    random_state: 42
+    verbosity: -1
+    objective: binary
+  frozen_thresholds_per_k:
+    k2:
+      horizon: 2
+      threshold: 0.0248
+      mcc: 0.1208
+    k3:
+      horizon: 3
+      threshold: 0.0347
+      mcc: 0.1444
+    k4:
+      horizon: 4
+      threshold: 0.0446
+      mcc: 0.158
+  mcc_optimal_policy:
+    threshold: 0.0347
+    mcc: 0.1444
+    note: MCC 0.1411 attached to MCC-optimal policy on validation cohort

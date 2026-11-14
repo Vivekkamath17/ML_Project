@@ -1,0 +1,66 @@
+# Configuration for OULAD Data Preparation Pipeline
+
+project:
+  name: "oulad_learner_dropout_pipeline"
+  random_seed: 42
+
+paths:
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  models_dir: "models/preprocessing"
+  figures_dir: "docs/figures"
+  docs_dir: "docs"
+
+horizons:
+  values: [2, 3, 4]
+  default_k: 3
+
+splits:
+  train:
+    - "2013B"
+    - "2013J"
+  val:
+    - "2014B"
+  test:
+    - "2014J"
+
+keys:
+  learner:
+    - "code_module"
+    - "code_presentation"
+    - "id_student"
+  grid:
+    - "code_module"
+    - "code_presentation"
+    - "id_student"
+    - "week"
+
+week:
+  days_per_week: 7
+  precourse_week: -1
+
+graph:
+  activity_types:
+    - "forumng"
+    - "oucollaborate"
+    - "ouwiki"
+    - "dataplus"
+
+labels:
+  horizons: [2, 3, 4]
+  default_k: 3
+  exclude_never_active_from_training: true
+  min_week: 2
+  exclude_cross_split_from_test: false
+
+demographics:
+  columns:
+    - "gender"
+    - "region"
+    - "highest_education"
+    - "imd_band"
+    - "age_band"
+    - "disability"
+  missing_imd_band: "Unknown"
+

@@ -1,0 +1,136 @@
+# Feature Manifest for OULAD Multi-Modal Modeling Pipeline
+# Lists all sanctioned model-input features by group.
+# All features in this manifest are strictly point-in-time safe (date <= 7*(t+1) - 1).
+# Targets, demographic attributes, and population flags are strictly barred.
+
+features:
+  static:
+    - num_of_prev_attempts
+    - studied_credits
+    - registration_lead_time
+    - has_missing_date_registration
+    - precourse_clicks
+    - course_progress
+
+  behavior:
+    - weekly_clicks
+    - days_since_last_activity
+    - weekend_click_ratio
+    - active_days_entropy
+    - share_forumng
+    - share_quiz
+    - share_resource
+    - share_oucontent
+    - share_homepage
+    - share_subpage
+    - share_url
+    - share_other_types
+
+  temporal:
+    - wow_change_clicks
+    - wow_change_active_days
+    - rolling_mean_clicks_2w
+    - rolling_mean_clicks_4w
+    - rolling_mean_active_days_2w
+    - rolling_mean_active_days_4w
+    - clicks_slope_4w
+    - clicks_ewma
+    - engagement_decay_rate
+
+  assessment:
+    - n_submitted
+    - n_missed
+    - mean_score_submitted
+    - last_score
+    - score_slope
+    - mean_lateness
+    - weighted_score_to_date
+    - has_any_assessment
+    - n_banked
+    - has_banked
+    - banked_score_mean
+
+  curriculum:
+    - pct_resources_visited
+    - n_skipped_resources
+    - pacing_vs_cohort_median
+    - prerequisite_gap
+
+# Continuous numeric features scaled by the train-only StandardScaler
+scaled_features:
+  - num_of_prev_attempts
+  - studied_credits
+  - registration_lead_time
+  - precourse_clicks
+  - course_progress
+  - weekly_clicks
+  - days_since_last_activity
+  - weekend_click_ratio
+  - active_days_entropy
+  - share_forumng
+  - share_quiz
+  - share_resource
+  - share_oucontent
+  - share_homepage
+  - share_subpage
+  - share_url
+  - share_other_types
+  - wow_change_clicks
+  - wow_change_active_days
+  - rolling_mean_clicks_2w
+  - rolling_mean_clicks_4w
+  - rolling_mean_active_days_2w
+  - rolling_mean_active_days_4w
+  - clicks_slope_4w
+  - clicks_ewma
+  - engagement_decay_rate
+  - n_submitted
+  - n_missed
+  - mean_score_submitted
+  - last_score
+  - score_slope
+  - mean_lateness
+  - weighted_score_to_date
+  - n_banked
+  - banked_score_mean
+  - pct_resources_visited
+  - n_skipped_resources
+  - pacing_vs_cohort_median
+  - prerequisite_gap
+
+# Metadata & Identifiers (not model features)
+identifiers:
+  - code_module
+  - code_presentation
+  - id_student
+  - week
+  - split
+
+# Target variables (for training/evaluation targets, not model inputs)
+targets:
+  - label_dropout_k2
+  - label_dropout_k3
+  - label_dropout_k4
+  - label_inactive_k2
+  - label_inactive_k3
+  - label_inactive_k4
+  - label_inactive_persistent_k2
+  - label_inactive_persistent_k3
+  - label_inactive_persistent_k4
+  - final_score
+  - grade_band
+
+# Row filtering and diagnostic flags (never model inputs)
+flags:
+  - is_enrolled_at_week_t
+  - is_post_assessment_period
+  - is_censored_k2
+  - is_censored_k3
+  - is_censored_k4
+  - label_is_proxy
+  - never_active_learner
+  - is_zero_click_withdrawal
+  - effective_date_unregistration
+  - module_presentation_length
+  - final_result
+

@@ -1,0 +1,168 @@
+<USER_REQUEST>
+# TASK: Phase 2 — Baseline models for learner dropout prediction (OULAD)
+
+## Context
+Phase 1 (data preparation) is complete and verified. This phase builds a well-evaluated, fully tracked baseline that all later models (sequence models, multi-task fusion) must beat. Correctness, leakage-safety and honest evaluation matter more than speed or high scores.
+
+Inputs (already built, do not modify):
+- `data/processed/features_weekly.parquet` (learner x week rows, with a `split` column and all label columns)
+- `config/features.yaml` (the 39 sanctioned model features; ONLY these columns may be used as model inputs)
+- `models/preprocessing/train_scaler.joblib` (StandardScaler fitted on train)
+- `config/config.yaml` (horizons, min_week, seeds, split map)
+- `data/processed/audit_demographics.parquet` (NOT used in this phase)
+
+## Working style
+1. FIRST produce an implementation plan and wait for my approval before writing code.
+2. Work in the checkpoints below. At each CHECKPOINT, stop, print the requested results, and wait for my go-ahead.
+3. After each step, run the code and show sanity checks. Fix problems before moving on.
+4. Python 3.11+, type hints, small functions. Put tunable values in `config/models.yaml`. Fixed seeds everywhere.
+5. Log EVERY experiment to MLflow (local tracking URI `mlruns/`). One experiment per task: `dropout`, `score`, `grade_band`, `ablation`. Each run logs parameters, k, min_week, a hash of the feature list, git commit (if available), metrics, and artifacts (plots, model).
+6. Record decisions and assumptions in `reports/phase2/phase2_summary.md` as you go.
+
+## Global rules
+- Primary target: `label_dropout_k3`. Eligible rows: enrolled, non-censored, `week >= min_week` (default 2). Also exclude `never_active_learner` rows from training (config default).
+- Splits: train = 2013B, 2013J. Validation = 2014B. Test = 2014J.
+- **THE TEST SPLIT (2014J) MUST NOT BE USED IN THIS PHASE.** Not for tuning, thresholds, model selection, plots or sanity checks. Add a guard in the data loader that raises an error if `split == "test"` is requested, unless an explicit `allow_test=True` flag is passed, and never pass it.
+- Use ONLY the columns listed in `config/features.yaml` as model inputs. Never use `module`, demographics, `final_result`, `final_score`, `grade_band`, any `label_*` column, `never_active_learner`, `is_zero_click_withdrawal`, `label_is_proxy`, or anything derived from `last_vle_date`.
+- Assessment-related NaNs mean "no submission yet" and are informative. Do not fill them with 0.
+- Fit imputers and scalers on TRAIN only.
+- Base rate is about 2%, so accuracy is not a valid metric. Always print the base rate next to PR-AUC and express PR-AUC as a multiple of the base rate.
+- Reference point to beat: recency-only logistic regression, val ROC-AUC 0.6159, PR-AUC 0.0304.
+
+## Project structure to create
+```
+config/models.yaml
+src/models/
+  data.py          (single loader, all filtering lives here)
+  metrics.py       (full metric suite, bootstrap CIs)
+  train_lr.py
+  train_lgbm.py
+  thresholds.py
+  horizons.py      (k=2/3/4, by-week, by-module analysis)
+  forecast.py      (final_score regression + grade_band classification)
+  robustness.py
+  ablation.py
+  sanity.py
+  evaluate.py      (builds the results tables and figures)
+reports/phase2/
+  figures/
+  results_table.csv
+  ablation_table.csv
+  by_week.csv  by_module.csv  by_horizon.csv
+  phase2_summary.md
+models/baselines/
+tests/test_models.py
+```
+
+## STEP 1: Loader, metrics and MLflow setup
+**data.py**: one function `load_split(split, k=3, min_week=2, drop_never_active=True, drop_proxy=False, allow_test=False)` returning X (only the sanctioned features), y, and a metadata frame (learner key, week, module, split, flags needed for robustness slices). All filtering (enrolled, non-censored, min_week, flags) happens here and nowhere else. Print row counts, learner counts and the positive rate for each split.
+
+**metrics.py**: one function computing, for given y_true, y_score and a threshold:
+- ROC-AUC, PR-AUC (average precision), base rate, PR-AUC as a multiple of the base rate
+- precision, recall, F1, MCC, confusion matrix (TP, FP, FN, TN)
+- Brier score
+- precision@top-5%, recall@top-5%, precision@top-10%, recall@top-10%, lift@top-10%
+- **Bootstrap 95% CIs resampled BY LEARNER** (not by row, since a learner's weekly rows are correlated), 500 resamples by default (configurable)
+
+**tests/test_models.py**: unit-test the metrics against scikit-learn on toy data, test that the loader filters are correct (no censored rows, no week < min_week, no never-active rows when excluded), test that the test-split guard raises, and test that no non-sanctioned column reaches X.
+
+## STEP 2: Simple baselines
+1. Majority/prior baseline (verifies the metric code).
+2. Recency-only logistic regression (`days_since_last_activity`). Reproduce the earlier val ROC-AUC 0.6159 and PR-AUC 0.0304 through the new pipeline and report any difference.
+3. One-feature baselines for each feature group (e.g. `weighted_score_to_date` alone, `active_days` alone), to see how much each group says by itself.
+
+## STEP 3: Logistic regression on all 39 features
+- Impute with TRAIN medians, add missing-indicator columns for assessment features, scale with the saved train scaler.
+- Tune only `C` on val. Compare unweighted vs `class_weight="balanced"`.
+- Print the top coefficients and check that the signs make sense.
+
+## STEP 4: LightGBM (main baseline)
+- Native NaN handling, unscaled features.
+- Compare three imbalance settings: none, `scale_pos_weight` about neg/pos, and a moderate weight (5 to 10).
+- Optuna search (50 to 100 trials) maximizing VAL PR-AUC. Ranges: `num_leaves` 15-127, `max_depth` 4-10, `learning_rate` 0.02-0.1, `min_child_samples` 50-500, `feature_fraction` and `bagging_fraction` 0.5-1.0, `lambda_l1` and `lambda_l2` 0-10. Early stopping on val.
+- Pick the champion by val PR-AUC (ROC-AUC and MCC as tie-breakers). Save it to `models/baselines/lgbm_champion_v1.txt` and log it in MLflow as `lgbm_champion_v1`.
+- Report both the weighted and unweighted versions' Brier scores (weighting distorts probabilities; calibration comes in a later phase).
+
+### >>> CHECKPOINT A <<<
+Stop here. Print:
+- a table: majority, recency-only, one-feature baselines, logistic regression, LightGBM, each with ROC-AUC, PR-AUC (with multiple of base rate), MCC, Brier and 95% CIs on val
+- the champion's hyperparameters, and the top 15 features by gain
+- the sanity warnings below, if any triggered
+
+Sanity rules (stop and alert me if triggered): val ROC-AUC above 0.90; a single feature with more than 50% of total gain; a validation score far above train-CV. Expected ranges: logistic regression ROC-AUC 0.70-0.78, LightGBM 0.75-0.85, PR-AUC about 0.05-0.15.
+
+## STEP 5: Threshold selection (VAL only, then frozen)
+1. **MCC-optimal threshold**: sweep thresholds and pick the maximizer.
+2. **Cost-based threshold**: expected cost with a missed dropout costing r times a wasted outreach. Use r = 5 and r = 10, and plot the sensitivity over r from 1 to 20.
+3. **Capacity-based policy**: flag the top 5% and top 10% of rows per week. Report precision, recall and the number of learners flagged.
+4. Save all frozen thresholds to `models/baselines/threshold_config.yaml`, and state which one should be the dashboard default and why.
+
+## STEP 6: Horizon, week and module analysis
+1. Repeat the champion pipeline for k = 2, 3, 4. State whether you tuned separately or reused the k=3 parameters.
+2. Metrics BY WEEK (ROC-AUC, PR-AUC, base rate, n), plotted. Report weeks 0-1 separately from weeks >= 2 (they are the drop-add window).
+3. Metrics BY MODULE (note that CCC is unseen in train and AAA/EEE are absent from val, so the table is not directly comparable across modules).
+4. The same recipe on `label_inactive_k3` (disengagement onset, only rows eligible for it), as a secondary target.
+
+## STEP 7: Performance forecasting baselines
+Population: non-withdrawn learners only (state this limitation: forecasts are conditional on staying).
+1. `final_score` regression with LightGBM. Metrics: MAE, RMSE, R2. Baselines: train mean, and `weighted_score_to_date` alone.
+2. `grade_band` (Distinction/Pass/Fail) classification with LightGBM and class weights. Metrics: macro-F1, per-class recall, quadratic weighted kappa, confusion matrix.
+3. Metrics BY WEEK for both tasks, plotted. Forecasts should improve as more assessments arrive.
+4. Because the target is one value per learner repeated across weekly rows, evaluate with bootstrap by learner and avoid letting a learner's rows leak across tuning folds.
+
+### >>> CHECKPOINT B <<<
+Stop here. Print the threshold policies with val precision/recall/MCC, the by-k, by-week and by-module tables, and the forecasting results with their baselines. Wait for my go-ahead.
+
+## STEP 8: Robustness checks (val and train only)
+1. **Leave-one-presentation-out CV** over 2013B, 2013J and 2014B (3 folds). Report the spread, which shows whether tuning on 2014B inflated val.
+2. **Seed variance**: retrain the champion with 5 seeds and report the mean and standard deviation.
+3. Val metrics with and without proxy-date learners (the 74).
+4. Val metrics with and without zero-click withdrawals (`is_zero_click_withdrawal`). These are unpredictable from behavior, so this separates model weakness from missing signal. Use the flag only for slicing evaluation, never as a feature.
+5. Val metrics with and without learners who also appear in train.
+
+## STEP 9: Modality ablation (champion hyperparameters fixed, 5 seeds per setting)
+Cumulative: behavior only, + temporal, + assessment, + curriculum, + static (full). Also leave-one-group-out (full minus each group). Report val PR-AUC and ROC-AUC with mean and standard deviation across seeds, and plot the gain per group with error bars. If a group adds nothing, say so.
+
+## STEP 10: Sanity and leakage hunt
+- **Shuffled-label test**: train on permuted labels, and confirm val ROC-AUC is about 0.5.
+- **Week-only test**: a model using only `week` and `course_progress` should score close to the base rate. If it scores much higher, explain the time structure it is exploiting.
+- Global feature importance (gain and permutation importance on val), saved for the later SHAP phase.
+- Confirm that no feature in the sanctioned list is derived from the full course (cohort statistics must use data up to week t only). If anything looks doubtful, flag it for me.
+
+### >>> CHECKPOINT C <<<
+Stop here. Print the robustness results, the ablation table, and the sanity-check results. Wait for my go-ahead before the final write-up.
+
+## STEP 11: Final outputs and acceptance checklist
+- Write `reports/phase2/phase2_summary.md` (about 2 pages): the model comparison table, the champion, the frozen thresholds, results by k/week/module, forecasting baselines, ablation, robustness findings, and limitations.
+- Save `results_table.csv`, `ablation_table.csv`, `by_week.csv`, `by_module.csv`, `by_horizon.csv` and all figures (PR and ROC curves, metrics by week, threshold sweep, ablation bars, feature importance).
+- Make sure all earlier pytest tests (11 from Phase 1) and the new model tests pass.
+- Print the acceptance checklist:
+  - [ ] Champion LightGBM logged in MLflow, with a frozen threshold config
+  - [ ] Comparison table: simple baselines vs logistic regression vs LightGBM, with CIs
+  - [ ] Results by k, week and module
+  - [ ] Forecasting baselines with by-week curves
+  - [ ] Ablation table with seed variance
+  - [ ] Robustness checks completed
+  - [ ] Sanity checks passed
+  - [ ] **The test split was never loaded** (confirm by searching the MLflow logs and code for `allow_test`)
+
+## Do NOT
+- Do not touch the test split (2014J) for any purpose
+- Do not use random row-wise splits or cross-validation that mixes rows of one learner across folds
+- Do not use any column outside `config/features.yaml` as an input
+- Do not report accuracy as a headline metric
+- Do not tune thresholds on anything except val
+- Do not start sequence models, NLP, SHAP/LIME, the dashboard, or calibration in this phase
+
+Begin with the implementation plan.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-14T11:21:10+05:30.
+
+The user's current state is as follows:
+Active Document: c:\ML_Project\config\config.yaml (LANGUAGE_UNSPECIFIED)
+Cursor is on line: 67
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from Claude Sonnet 4.6 (Thinking) to Gemini 3.8 Flash (Medium). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
