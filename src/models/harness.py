@@ -1,50 +1,58 @@
 """
-Shared Model Evaluation Harness for OULAD Pipeline.
+Shared Model Evaluation Harness for OULAD Modeling Pipeline.
 
-Exposes standard evaluation, clustered paired bootstrap, learner-grouped cross-validation,
-Optuna hyperparameter tuning, and MLflow run logging for team use.
+Exposes:
+- evaluate_model: wraps metrics.py for point metrics, top-k lift, and learner-bootstrap 95% CIs.
+- paired_bootstrap: computes delta ROC and delta PR with 95% bootstrap CIs clustered by student ID.
+- learner_group_cv: 5-fold cross-validation generator strictly grouped by id_student.
+- tune_with_optuna: Optuna hyperparameter search wrapper with deterministic seed.
+- log_run: MLflow logger enforcing naming schema <family>/<model>/<variant>/seed<N> and experiment validation.
 """
 
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 import optuna
 import pandas as pd
-from sklearn.metrics import (
-    average_precision_score,
-    brier_score_loss,
-    f1_score,
-    matthews_corrcoef,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
 from sklearn.model_selection import GroupKFold
 
+from src.models.metrics import compute_bootstrap_ci, compute_point_metrics
 from src.models.tracking import log_model_experiment, setup_mlflow
+
+
+ALLOWED_EXPERIMENTS = {"dropout", "onset", "score", "grade_band", "calibration"}
+RUN_NAME_REGEX = re.compile(r"^[a-zA-Z0-9_\-]+/[a-zA-Z0-9_\-]+/[a-zA-Z0-9_\-]+/seed\d+$")
 
 
 def evaluate_model(
     y_true: Union[np.ndarray, pd.Series],
     y_prob: Union[np.ndarray, pd.Series],
-    threshold: Optional[float] = None,
-) -> Dict[str, float]:
+    cluster_ids: Optional[Union[np.ndarray, pd.Series, list]] = None,
+    threshold: float = 0.035,
+    n_resamples: int = 500,
+    seed: int = 42,
+) -> Dict[str, Any]:
     """
-    Compute standard model evaluation metrics.
+    Compute full evaluation suite for binary classification: point metrics, lift@top-k,
+    and optional learner-bootstrap 95% confidence intervals.
 
     Parameters:
     -----------
-    y_true: array-like of binary ground truth labels (0 or 1).
-    y_prob: array-like of predicted probabilities in [0.0, 1.0].
-    threshold: optional float decision threshold. If provided, computes classification metrics.
+    y_true: binary ground truth labels (0 or 1).
+    y_prob: predicted probabilities in [0.0, 1.0].
+    cluster_ids: cluster key for bootstrap resampling. Must be id_student (or composite learner key).
+                 If provided, computes 95% cluster-bootstrap CIs.
+    threshold: decision threshold (default 0.035 for MCC-optimal baseline).
+    n_resamples: bootstrap resamples (default 500).
+    seed: random seed for bootstrap.
 
     Returns:
     --------
-    Dict[str, float] with 'roc_auc', 'pr_auc', 'brier_score',
-    and optionally 'precision', 'recall', 'f1', 'mcc'.
+    Dict[str, Any] containing point metrics and (if cluster_ids provided) 'ci' dictionary.
     """
     y_t = np.asarray(y_true).astype(int)
     y_p = np.asarray(y_prob).astype(float)
@@ -52,24 +60,38 @@ def evaluate_model(
     if len(y_t) != len(y_p):
         raise ValueError(f"Length mismatch: len(y_true)={len(y_t)}, len(y_prob)={len(y_p)}")
 
-    roc = float(roc_auc_score(y_t, y_p))
-    pr = float(average_precision_score(y_t, y_p))
-    brier = float(brier_score_loss(y_t, y_p))
+    point = compute_point_metrics(y_t, y_p, threshold=threshold)
 
-    metrics = {
-        "roc_auc": roc,
-        "pr_auc": pr,
-        "brier_score": brier,
+    result = {
+        "roc_auc": point["roc_auc"],
+        "pr_auc": point["pr_auc"],
+        "brier_score": point["brier"],
+        "base_rate": point["base_rate"],
+        "pr_multiplier": point.get("pr_auc_mult", point["pr_auc"] / point["base_rate"] if point["base_rate"] > 0 else 1.0),
+        "precision": point["precision"],
+        "recall": point["recall"],
+        "f1": point["f1"],
+        "mcc": point["mcc"],
+        "prec_at_top5": point.get("precision_at_5pct", 0.0),
+        "recall_at_top5": point.get("recall_at_5pct", 0.0),
+        "prec_at_top10": point.get("precision_at_10pct", 0.0),
+        "recall_at_top10": point.get("recall_at_10pct", 0.0),
+        "lift_at_top10": point.get("lift_at_10pct", 0.0),
     }
 
-    if threshold is not None:
-        y_pred = (y_p >= threshold).astype(int)
-        metrics["precision"] = float(precision_score(y_t, y_pred, zero_division=0))
-        metrics["recall"] = float(recall_score(y_t, y_pred, zero_division=0))
-        metrics["f1"] = float(f1_score(y_t, y_pred, zero_division=0))
-        metrics["mcc"] = float(matthews_corrcoef(y_t, y_pred))
+    if cluster_ids is not None:
+        c_series = pd.Series(cluster_ids).astype(str)
+        cis = compute_bootstrap_ci(
+            y_t,
+            y_p,
+            learner_keys=c_series,
+            threshold=threshold,
+            n_resamples=n_resamples,
+            random_seed=seed,
+        )
+        result["ci"] = cis
 
-    return metrics
+    return result
 
 
 def paired_bootstrap(
@@ -82,7 +104,7 @@ def paired_bootstrap(
 ) -> Dict[str, Any]:
     """
     Compute paired differences (Model A minus Model B) with 95% bootstrap confidence intervals
-    clustered by student identifier (cluster_ids must be id_student alone).
+    clustered strictly by student identifier (cluster_ids = id_student).
 
     Parameters:
     -----------
@@ -95,13 +117,7 @@ def paired_bootstrap(
 
     Returns:
     --------
-    Dict containing:
-      'delta_roc': float,
-      'delta_roc_ci': (float, float),
-      'delta_pr': float,
-      'delta_pr_ci': (float, float),
-      'n_boot': int,
-      'n_clusters': int
+    Dict containing delta_roc, delta_roc_ci, delta_pr, delta_pr_ci, n_boot, n_clusters.
     """
     y_t = np.asarray(y_true).astype(int)
     p_a = np.asarray(y_prob_a).astype(float)
@@ -112,7 +128,8 @@ def paired_bootstrap(
     if not (len(p_a) == len(p_b) == len(clusters) == n_rows):
         raise ValueError("All inputs must have identical length.")
 
-    # Base point estimates
+    from sklearn.metrics import average_precision_score, roc_auc_score
+
     point_roc_a = roc_auc_score(y_t, p_a)
     point_roc_b = roc_auc_score(y_t, p_b)
     point_delta_roc = float(point_roc_a - point_roc_b)
@@ -121,7 +138,6 @@ def paired_bootstrap(
     point_pr_b = average_precision_score(y_t, p_b)
     point_delta_pr = float(point_pr_a - point_pr_b)
 
-    # Index rows by cluster
     unique_clusters, inv_indices = np.unique(clusters, return_inverse=True)
     n_clusters = len(unique_clusters)
 
@@ -142,7 +158,6 @@ def paired_bootstrap(
         pa_boot = p_a[sampled_rows]
         pb_boot = p_b[sampled_rows]
 
-        # In case all labels in sample are identical
         if len(np.unique(y_boot)) < 2:
             boot_deltas_roc[b] = point_delta_roc
             boot_deltas_pr[b] = point_delta_pr
@@ -175,14 +190,14 @@ def learner_group_cv(
     n_splits: int = 5,
 ) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
     """
-    Generator yielding train/val index splits grouped strictly by learner identifier (id_student).
+    Generator yielding 5-fold train/val splits strictly grouped by student identifier (id_student).
     Guarantees zero student overlap between folds.
 
     Parameters:
     -----------
     X: feature matrix
     y: target array
-    groups: learner IDs (id_student)
+    groups: student IDs (id_student)
     n_splits: number of folds (default 5)
 
     Yields:
@@ -202,17 +217,6 @@ def tune_with_optuna(
     """
     Standard wrapper for hyperparameter tuning with Optuna.
     Configures deterministic TPESampler with the specified seed.
-
-    Parameters:
-    -----------
-    objective_fn: callable taking an optuna.Trial and returning the optimization metric.
-    n_trials: number of search trials (default 30).
-    seed: random seed for the TPESampler.
-    direction: 'maximize' or 'minimize'.
-
-    Returns:
-    --------
-    optuna.Study object.
     """
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     sampler = optuna.samplers.TPESampler(seed=seed)
@@ -222,37 +226,69 @@ def tune_with_optuna(
 
 
 def log_run(
-    model_name: str,
+    run_name: str,
     params: Dict[str, Any],
     metrics: Dict[str, float],
+    tags: Optional[Dict[str, str]] = None,
     feature_list: Optional[List[str]] = None,
     artifacts: Optional[Dict[str, str]] = None,
-    experiment_name: str = "oulad_baselines",
+    experiment_name: str = "dropout",
+    tracking_uri: str = "sqlite:///mlruns.db",
 ) -> str:
     """
-    Standardized MLflow logger logging parameters, metrics, and artifacts to SQLite database.
+    Enforce naming standard and log run to MLflow SQLite backend.
 
-    Parameters:
-    -----------
-    model_name: descriptive name for the model run.
-    params: dictionary of hyperparameter or setup values.
-    metrics: dictionary of evaluation metrics (roc_auc, pr_auc, etc.).
-    feature_list: list of feature names used by the model.
-    artifacts: optional dict of artifact names to file paths.
-    experiment_name: MLflow experiment name (default 'oulad_baselines').
+    Naming convention:
+      run_name must match <family>/<model>/<variant>/seed<N>
+      Example: 'tree/lgbm/v3/seed42', 'sequence/lstm/bilstm/seed1'
 
-    Returns:
-    --------
-    str: MLflow run_id.
+    Experiment name must be one of:
+      {'dropout', 'onset', 'score', 'grade_band', 'calibration'}
+
+    Required tags:
+      family, model, variant, seed, target, horizon
     """
+    # 1. Enforce run name format
+    if not RUN_NAME_REGEX.match(run_name):
+        raise ValueError(
+            f"Invalid run_name: '{run_name}'. "
+            "Must match <family>/<model>/<variant>/seed<N> (e.g., 'tree/lgbm/v3/seed42')."
+        )
+
+    parts = run_name.split("/")
+    family, model_val, variant, seed_str = parts[0], parts[1], parts[2], parts[3]
+    seed_num = int(seed_str.replace("seed", ""))
+
+    # 2. Enforce authorized experiment
+    if experiment_name not in ALLOWED_EXPERIMENTS:
+        raise ValueError(
+            f"Invalid experiment_name: '{experiment_name}'. "
+            f"Must be one of {ALLOWED_EXPERIMENTS}."
+        )
+
+    # 3. Required tags
+    combined_tags = tags.copy() if tags else {}
+    combined_tags.setdefault("family", family)
+    combined_tags.setdefault("model", model_val)
+    combined_tags.setdefault("variant", variant)
+    combined_tags.setdefault("seed", str(seed_num))
+    combined_tags.setdefault("target", str(params.get("target", "label_dropout_k3")))
+    combined_tags.setdefault("horizon", str(params.get("k", 3)))
+
+    for req_tag in ["family", "model", "variant", "seed", "target", "horizon"]:
+        if req_tag not in combined_tags:
+            raise ValueError(f"Missing required tag: '{req_tag}'")
+
     os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
-    setup_mlflow()
+    setup_mlflow(tracking_uri)
     feats = feature_list or list(params.keys())
+
     return log_model_experiment(
         experiment_name=experiment_name,
-        run_name=model_name,
+        run_name=run_name,
         params=params,
         metrics=metrics,
         feature_list=feats,
         artifacts=artifacts,
+        tags=combined_tags,
     )

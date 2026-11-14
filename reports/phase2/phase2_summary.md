@@ -22,31 +22,38 @@
 
 ### 1.2 Model Selection, Selection Optimism & LOPO Context
 - **Candidate Comparison**:
-  - **v1 (All 39 features, 285 trees)**: Val ROC = 0.7736, PR = 0.0735 | LOPO mean ROC = 0.7905, PR = **0.0802**
+  - **v1 (All 39 features, 285 trees)**: Val ROC = 0.7736, PR = 0.0735 | LOPO mean ROC = 0.7905, PR = **0.0813**
   - **v2 (35 features, curriculum group dropped, 329 trees)**: Val ROC = 0.7731, PR = 0.0764 | LOPO mean ROC = 0.7891, PR = 0.0782
-  - **v3 (38 features, `n_skipped_resources` dropped, 463 trees)**: Val ROC = 0.7757, PR = 0.0786 | LOPO mean ROC = 0.7915, PR = 0.0828
+  - **v3 (38 features, `n_skipped_resources` dropped, 463 trees)**: Val ROC = 0.7757, PR = 0.0786 | LOPO mean ROC = 0.7915, PR = **0.0828**
 - **Selection Optimism Note**: v3 was selected from the three candidate variants using validation performance on `2014B`. Consequently, its validation metrics carry modest selection optimism.
-- **Statistical Significance & LOPO Interpretation**:
-  - Across the 3 cross-presentation LOPO folds, v3 vs v1 means differ by only +0.0010 ROC-AUC and +0.0026 PR-AUC.
-  - The paired learner-bootstrap 95% confidence interval widths on `2014B` (500 resamples clustered by unique learner) are $\pm 0.012$ on ROC-AUC and $\pm 0.014$ on PR-AUC.
-  - Because LOPO fold mean differences are well under one CI width, v3 does **not** represent a statistically meaningful or measured performance improvement over v1.
+- **Statistical Significance & Direct Paired Bootstrap Comparison**:
+  - Across the 3 cross-presentation LOPO folds from the same run, v3 minus v1 mean differences are $\Delta\text{ROC} = \mathbf{+0.0010}$ (0.7915 vs 0.7905) and $\Delta\text{PR} = \mathbf{+0.0015}$ (0.0828 vs 0.0813).
+  - Direct paired learner-bootstrap comparison on `2014B` (500 resamples clustered by `id_student`):
+    - $\Delta\text{ROC-AUC} = \mathbf{+0.0021}$ [95% CI: -0.0015, +0.0052] (95% CI spans zero, demonstrating no statistically significant ROC difference).
+    - $\Delta\text{PR-AUC} = \mathbf{+0.0051}$ [95% CI: +0.0015, +0.0087].
+  - **Per-Fold LOPO Deltas (v3 minus v1)**:
+    - `2013B`: v1 (0.7921 ROC / 0.0861 PR) vs v3 (0.8007 ROC / 0.0983 PR) $\to$ $\Delta\text{ROC} = \mathbf{+0.0087}$, $\Delta\text{PR} = \mathbf{+0.0121}$
+    - `2013J`: v1 (0.7861 ROC / 0.0628 PR) vs v3 (0.7924 ROC / 0.0687 PR) $\to$ $\Delta\text{ROC} = \mathbf{+0.0063}$, $\Delta\text{PR} = \mathbf{+0.0059}$
+    - `2014B`: v1 (0.7563 ROC / 0.0673 PR) vs v3 (0.7703 ROC / 0.0760 PR) $\to$ $\Delta\text{ROC} = \mathbf{+0.0141}$, $\Delta\text{PR} = \mathbf{+0.0086}$
   - LOPO serves strictly as a cross-presentation **stability range** across course structures, not as an alternative validation score.
 
 ### 1.3 Empirical Justification for Pruning `n_skipped_resources`: Module Mix & Feature Proxies
 Pruning `n_skipped_resources` is justified by drift in **module mix** across presentations, not performance optimization:
-- **Module Mix Drift**:
-  - Per-module catalog resource counts are nearly identical across presentations (e.g., BBB: 315 in 2013B vs 311 in 2014B; DDD: 428 in 2013B vs 453 in 2014B; FFF: 508 in 2013B vs 478 in 2014B).
-  - The drift is driven by presentation **module mix**: `2013B` contained only large-catalog STEM modules (BBB, DDD, FFF; mean 278.7 skipped), whereas `2014B` introduced low-catalog modules CCC (196 resources), EEE (109 resources), and GGG (124 resources). (Note: module AAA was offered only in J presentations [2013J, 2014J] and never existed in either 2013B or 2014B).
+- **Resource Count Definition & Module Mix Drift**:
+  - *Definition*: Catalog resource count is defined as the total number of VLE activity entries registered in raw `vle.csv` for each module-presentation.
+  - Per-module counts vary across presentations (e.g., BBB: 315 in 2013B, 321 in 2013J, 311 in 2014B, 207 in 2014J; DDD: 428 in 2013B, 462 in 2013J, 453 in 2014B, 365 in 2014J).
+  - The severe presentation drift is driven by **presentation module mix**: `2013B` contained only 3 large-catalog STEM modules (BBB 315, DDD 428, FFF 508; mean 278.7 skipped), whereas `2014B` introduced low-catalog modules CCC (196 resources), EEE (109 resources), and GGG (124 resources). (Note: module AAA was offered only in J presentations [2013J: 211, 2014J: 202] and never existed in either 2013B or 2014B).
   - Total VLE catalog entries reflect this mix: 2013B (1,251), 2013J (1,772), 2014B (1,671), 2014J (1,670).
 - **Curriculum Feature Population Stability Index (PSI)**:
   - `pct_resources_visited`: $\text{PSI} = \mathbf{0.0129}$ (stable, $< 0.10$)
   - `n_skipped_resources`: $\text{PSI} = \mathbf{0.4808}$ (**severe population shift**, $> 0.25$; Train mean = 249.94 vs Val mean = 189.87)
   - `pacing_vs_cohort_median`: $\text{PSI} = \mathbf{0.0052}$ (stable, $< 0.10$)
   - `prerequisite_gap`: $\text{PSI} = \mathbf{0.0130}$ (stable, $< 0.10$)
-- **Module Identity Proxy Audit**:
-  - `n_skipped_resources` acts strongly as an unintended **module-identity proxy**: a simple classifier predicting course module from `n_skipped_resources` alone achieves **48.4% validation accuracy (51.8% balanced accuracy)** across the 6 modules in 2014B.
-  - `studied_credits` acts as a partial module proxy (**34.3% accuracy, 33.8% balanced accuracy**) because degree credit requirements differ across departments (30 vs 60 credits).
-  - `course_progress` exhibits virtually no module proxy capacity (**20.4% accuracy, 16.7% balanced accuracy**, near random chance).
+- **Module Identity Proxy Audit (vs Majority-Class Baseline)**:
+  - In Validation `2014B`, the largest module cohort is BBB (1,396 learners), giving a naive **majority-class baseline accuracy of 21.6%**.
+  - `n_skipped_resources`: acts strongly as an unintended **module-identity proxy**, achieving **48.4% validation accuracy (51.8% balanced accuracy)** across the 6 modules—more than 2.2× higher than majority-class chance.
+  - `studied_credits`: is disclosed as a **partial module proxy**, achieving **34.3% accuracy (33.8% balanced accuracy)** because standard credit requirements differ by faculty (e.g. 30 vs 60 credits).
+  - `course_progress`: exhibits no module proxy capacity (**20.4% accuracy, 16.7% balanced accuracy**, below majority-class chance level).
   - Pruning `n_skipped_resources` eliminates this structural module-proxy artifact while preserving normalized curriculum metrics.
 
 ### 1.4 Paired Learner-Bootstrap Baseline Comparison
@@ -66,6 +73,7 @@ Evaluated on Validation `2014B` at week $\ge 2$:
 - **Eligible Enrolled Cohort**: 6,474 unique students (denominator for flagged population).
 - **Withdrawn Cohort**: 1,395 unique students (denominator for attrition capture; 21.55% base rate).
 - **Reconciliation Note**: $5,079\text{ (active non-withdrawn)} + 1,395\text{ (active withdrawn)} = \mathbf{6,474}$ unique learners. The earlier 1,394 figure arose from filtering on `date_unregistration.notna()`, which omitted learner `(DDD, 2014B, 227826)` who had a proxy unregistration date (`label_is_proxy = True`).
+- **Cost $r=10$ Threshold Note**: The cost optimization grid search identified $\theta = 0.1124$ as the exact operating minimum (flagging 1,232 learners and catching 494 dropouts). Applying the rounded threshold $\theta = 0.1120$ flags 1,243 learners (19.2%) and catches 498 dropouts (35.7%), capturing 11 additional borderline students in $[0.1120, 0.1124)$ (4 of whom withdrew). Both points exhibit identical learner precision (40.1%).
 
 | Policy | Threshold $\theta$ | Flagged Learners (Denom=6,474) | Withdrawn Caught (Denom=1,395) | Learner Precision | Random Exp | Lift Over Random | Share of ALL WD within 3w | Share of ALL WD $\ge 2$w | Lead Time Q1 / Med / Q3 (Final Run) | Flagged Learners per Catch | Flag-Weeks per Catch | MCC Note |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |

@@ -1,5 +1,5 @@
 # SUPERSEDED: This table evaluated intermediate v1 and v2 models and is superseded by reports/phase2/policy_table_v3.csv
-Policy,"Total Flagged (Denom=6,474)","Learner Recall (Denom=1,394)",Random Recall Ref,Learner Precision,Random Prec Ref,Share of ALL WD within 3w,Share of ALL WD >= 2w,Median Lead (Final Run),mcc_is_in_sample,mcc_note
+Policy,"Total Flagged (Denom=6,474)","Learner Recall (Denom=1,395)",Random Recall Ref,Learner Precision,Random Prec Ref,Share of ALL WD within 3w,Share of ALL WD >= 2w,Median Lead (Final Run),mcc_is_in_sample,mcc_note
 MCC-Optimal v1 (th=0.025),"4,108 (63.5%)","1,144 (82.1%)",63.5%,27.8%,21.5%,980 (70.3%),"1,064 (76.3%)",6.0 wks,True,in-sample on val (threshold chosen on val)
 MCC-Optimal v2 (th=0.025),"4,176 (64.5%)","1,167 (83.7%)",64.5%,27.9%,21.5%,989 (70.9%),"1,088 (78.0%)",6.0 wks,True,in-sample on val (threshold chosen on val)
 Cost r=10 (th=0.095),816 (12.6%),322 (23.1%),12.6%,39.5%,21.5%,187 (13.4%),295 (21.2%),5.0 wks,False,N/A (cost-optimal)

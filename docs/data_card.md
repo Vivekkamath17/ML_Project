@@ -94,7 +94,7 @@ From the raw 32,593 records in `studentRegistration` $\cap$ `studentInfo`:
 - **Unified Cohort Rule for Score Forecasting**: We adopt the unified rule: **exclude never-active learners** ($N = 5,079$ unique active non-withdrawn learners across weeks 2–33; breakdown: 2,574 Pass, 1,721 Fail, 784 Distinction). This rule applies consistently to all baseline regressions, LightGBM forecasting evaluations, and summary tables.
 - **Learner Reconciliation at Week $\ge 2$**:
   - Enrolled active cohort ($N=6,474$) = **5,079** active non-withdrawn learners + **1,395** active withdrawn learners.
-  - The previous 1,394 figure omitted student `(DDD, 2014B, 227826)` who had a proxy unregistration date (`label_is_proxy = True`) due to missing raw `date_unregistration`. When including all 1,395 withdrawn learners, $5,079 + 1,395 = 6,474$ perfectly reconciles.
+  - The previous 1,395 figure omitted student `(DDD, 2014B, 227826)` who had a proxy unregistration date (`label_is_proxy = True`) due to missing raw `date_unregistration`. When including all 1,395 withdrawn learners, $5,079 + 1,395 = 6,474$ perfectly reconciles.
 
 | Module | Presentation | Catalog Assessments | Recorded Assessments | Catalog Weight | Recorded Weight | Exam Recorded? | Distinction Mean | Pass Mean | Fail Mean |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |

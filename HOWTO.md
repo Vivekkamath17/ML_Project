@@ -1,12 +1,22 @@
 # OULAD Modeling Team Guide & Developer Contract (`HOWTO.md`)
 
-Welcome to the Open University Learning Analytics Dataset (OULAD) machine learning repository. This guide establishes the shared development contracts, environment standards, baseline targets, and APIs for building sequence models, forecasting pipelines, calibration layers, and interpretability modules.
+Welcome to the Open University Learning Analytics Dataset (OULAD) machine learning repository. This guide establishes the shared development contracts, environment standards, baseline targets, and APIs for building sequence models, continuous forecasting pipelines, calibration layers, and interpretability modules.
 
 ---
 
-## 1. Environment Setup
+## 1. Team Roles & Project Responsibilities
 
-### 1.1 Python Version & Virtual Environment
+| Role | Primary Responsibilities | Target Deliverables |
+| :--- | :--- | :--- |
+| **Teammate A (Sequence Modeling)** | Recurrent & temporal neural architectures on student interaction trajectories | LSTM, GRU, Transformers, Temporal Convolutional Networks (TCN), dynamic sequence masking, embedding layers for VLE activities. |
+| **Teammate B (Forecasting & Interpretability)** | Continuous score forecasting, post-hoc calibration, explainability & fairness audits | Multi-horizon score regressions, Platt/Isotonic/Conformal calibration curves, TreeSHAP / KernelSHAP feature attributions, algorithmic demographic audits. |
+| **Shared Team Contract** | Standardized evaluation, leak-free validation, cross-validation discipline | `src.models.data.load_split`, `src.models.predictions.write_predictions`, `src.models.harness.evaluate_model`, 5-seed headline reporting. |
+
+---
+
+## 2. Environment Setup
+
+### 2.1 Python Version & Virtual Environment
 The repository requires **Python 3.12**. Always use an isolated virtual environment:
 
 ```bash
@@ -23,7 +33,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 1.2 MLflow Tracking Server (Local SQLite Backend)
+### 2.2 MLflow Tracking Server (Local SQLite Backend)
 All experiment logging uses a persistent SQLite backend located at `sqlite:///mlruns.db`.  
 To inspect runs, parameters, metrics, and logged artifacts:
 
@@ -34,7 +44,7 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ---
 
-## 2. Repository Directory Structure
+## 3. Repository Directory Structure
 
 ```
 c:\ML_Project\
@@ -77,7 +87,25 @@ c:\ML_Project\
 
 ---
 
-## 3. How to Load Data (`src.models.data.load_split`)
+## 4. The Four Core Prediction Targets
+
+All models must target one of these four standardized problem formulations:
+
+1. **Administrative Dropout (`label_dropout_k{2,3,4}`)**:
+   - Binary indicator: Will the learner unregister within the next $k$ weeks ($k \in \{2, 3, 4\}$)?
+   - Evaluated on enrolled students (`is_enrolled_at_week_t == True`, week $\ge 2$).
+2. **Behavioral Disengagement Onset (`label_inactive_k{2,3,4}`)**:
+   - Binary indicator: Given the learner clicked in week $t$ (`weekly_clicks > 0`), will they log zero clicks across the next $k$ weeks?
+3. **Continuous Final Score Forecasting (`final_score`)**:
+   - Continuous target in $[0.0, 100.0]$ representing cumulative assessment performance.
+   - Evaluated strictly on the active non-withdrawn cohort ($N=5,079$ in validation) at snapshot weeks 4, 8, and 12.
+4. **End-of-Term Grade Band (`grade_band`)**:
+   - Multiclass target with 3 classes: `Fail`, `Pass`, `Distinction`.
+   - Prediction file must output class probability columns: `y_score_fail`, `y_score_pass`, `y_score_distinction`.
+
+---
+
+## 5. How to Load Data (`src.models.data.load_split`)
 
 Always load data through `load_split()`. It guarantees point-in-time leakage filtering, excludes post-unregistration rows, handles censoring, and enforces split isolation.
 
@@ -96,9 +124,13 @@ X_va_sc, y_va_sc, meta_va_sc = load_split(
     "val", non_withdrawn_only=True, drop_never_active=True, target_col="final_score"
 )
 
-# 3. Behavioral Disengagement Onset (Active Clicking in Week t -> 0 Clicks in Next k Weeks)
+# 3. Behavioral Disengagement Onset
 X_tr_in, y_tr_in, meta_tr_in = load_split("train", target_col="label_inactive_k3")
 X_va_in, y_va_in, meta_va_in = load_split("val", target_col="label_inactive_k3")
+
+# 4. Multiclass Grade Band
+X_tr_gb, y_tr_gb, meta_tr_gb = load_split("train", target_col="grade_band")
+X_va_gb, y_va_gb, meta_va_gb = load_split("val", target_col="grade_band")
 ```
 
 > [!CAUTION]
@@ -108,7 +140,7 @@ X_va_in, y_va_in, meta_va_in = load_split("val", target_col="label_inactive_k3")
 
 ---
 
-## 4. Feature Manifest & The Official 38-Feature Set
+## 6. Feature Manifest & The Official 38-Feature Set
 
 The complete list of 39 sanctioned features is whitelisted in `config/features.yaml`.  
 The official Phase 2 baseline model (**LightGBM v3**) uses **38 features** by excluding `n_skipped_resources` due to presentation-level module mix drift.
@@ -123,24 +155,16 @@ all_features = load_feature_manifest("config/features.yaml")
 v3_features = [f for f in all_features if f != "n_skipped_resources"]
 ```
 
-### Feature Categories:
-1. **Interaction Intensity & Regularity**: `weekly_clicks`, `cum_clicks`, `clicks_per_active_day`, `active_days_count`, `relative_activity_ratio`.
-2. **Temporal Trend & Momentum**: `clicks_growth_rate`, `rolling_2w_diff`, `acceleration_clicks`, `streak_active_weeks`, `streak_inactive_weeks`.
-3. **Assessment Performance**: `weighted_score_to_date`, `avg_submission_lateness`, `unweighted_pass_rate`, `has_any_assessment`, `n_banked`.
-4. **Curriculum Pacing (Normalized)**: `pct_resources_visited`, `pacing_vs_cohort_median`, `prerequisite_gap`. *(Note: `n_skipped_resources` is excluded from v3)*.
-5. **VLE Resource Mix**: Proportion of clicks across `resource`, `oucontent`, `forumng`, `quiz`, `subpage`, `homepage`, `url`.
-6. **Registration & Precourse Context**: `studied_credits`, `precourse_clicks`, `days_before_start_registered`, `num_of_prev_attempts`.
-
 ---
 
-## 5. Baseline Targets to Beat (Validation Split: `2014B`, $week \ge 2$)
+## 7. Baseline Numbers to Beat (Validation Split: `2014B`, $week \ge 2$)
 
-To demonstrate a valid improvement, new architectures (sequence models, survival models, neural nets) must outperform these validated baselines:
+To demonstrate a valid improvement, new architectures must beat these validated baselines:
 
-### 5.1 Dropout Prediction ($k=3$ Weeks Ahead, Base Rate = 2.367%)
+### 7.1 Dropout Prediction ($k=3$ Weeks Ahead, Base Rate = 2.367%)
 | Model | Features | Val ROC-AUC | Val PR-AUC | Val Brier Score | Notes |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **LightGBM v3 (Official Champion)** | 38 | **0.7757** | **0.0786** | **0.0221** | Train-only tuned: 463 trees, depth 3, leaves 50. 5-seed mean: 0.7724. |
+| **LightGBM v3 (Official Champion)** | 38 | **0.7757** | **0.0786** | **0.0221** | Train-only tuned: 463 trees, depth 3, leaves 50. **5-seed headline mean: 0.7724 ± 0.0012**. |
 | **Logistic Regression (Balanced)** | 39 | 0.7438 | 0.0638 | 0.1742 | $C=0.01$, balanced class weights |
 | **Logistic Regression (Unweighted)** | 39 | 0.7370 | 0.0617 | 0.0227 | $C=0.1$, standard L2 regularization |
 | **Recency-Only Baseline** | 1 | 0.6552 | 0.0418 | 0.0232 | `days_since_last_activity` single-feature model |
@@ -148,7 +172,7 @@ To demonstrate a valid improvement, new architectures (sequence models, survival
 | **Score-Only Baseline** | 1 | 0.6449 | 0.0435 | 0.0234 | `weighted_score_to_date` single-feature model |
 | **Majority Class Prior** | 0 | 0.5000 | 0.0237 | 0.0231 | Constant training prior ($p = 0.0185$) |
 
-### 5.2 Continuous Final Score Forecasting ($N=5,079$ Active Non-Withdrawn Cohort)
+### 7.2 Continuous Final Score Forecasting ($N=5,079$ Active Non-Withdrawn Cohort)
 | Snapshot Week | Per-Module Fitted Baseline MAE ($R^2$) | LightGBM MAE ($R^2$) | Target Metric to Beat |
 | :---: | :---: | :---: | :---: |
 | **Week 4** | 23.53 ($R^2 = 0.109$) | **16.19 ($R^2 = 0.467$)** | $\text{MAE} < 16.19$ |
@@ -157,14 +181,15 @@ To demonstrate a valid improvement, new architectures (sequence models, survival
 
 ---
 
-## 6. Model Training & Prediction Workflow Template
+## 8. Model Training & Prediction Workflow Template
 
-Below is a complete, executable 20-line template demonstrating training, validation evaluation, and standardized prediction output:
+Below is a complete, copy-pasteable script template demonstrating training, validation evaluation, latency measurement, and standardized prediction output:
 
 ```python
+import time
 import lightgbm as lgb
 from src.models.data import load_split
-from src.models.predictions import write_predictions
+from src.models.predictions import write_predictions, read_predictions
 from src.models.harness import evaluate_model
 
 # 1. Load data
@@ -174,166 +199,141 @@ X_va, y_va, meta_va = load_split("val", k=3, min_week=2)
 # 2. Select v3 sanctioned features (38 features)
 features = [col for col in X_tr.columns if col != "n_skipped_resources"]
 
-# 3. Fit model
+# 3. Fit model and record training time
+t0 = time.perf_counter()
 train_set = lgb.Dataset(X_tr[features], label=y_tr)
 params = {"objective": "binary", "learning_rate": 0.05, "num_leaves": 31, "verbosity": -1, "random_state": 42}
 model = lgb.train(params, train_set, num_boost_round=100)
+train_time_sec = time.perf_counter() - t0
 
-# 4. Predict probabilities on validation set
+# 4. Predict probabilities on validation set and record inference latency
+t1 = time.perf_counter()
 val_probs = model.predict(X_va[features])
+inference_latency_ms_per_1k = ((time.perf_counter() - t1) / len(X_va)) * 1000 * 1000
 
-# 5. Evaluate against standard metrics
-metrics = evaluate_model(y_va, val_probs, threshold=0.035)
-print(f"Validation: ROC-AUC = {metrics['roc_auc']:.4f}, PR-AUC = {metrics['pr_auc']:.4f}")
+# 5. Evaluate against standard metrics with student-clustered CIs
+metrics = evaluate_model(y_va, val_probs, cluster_ids=meta_va["id_student"], threshold=0.035, n_resamples=100)
+print(f"Train time: {train_time_sec:.2f}s | Latency: {inference_latency_ms_per_1k:.2f}ms / 1k rows")
+print(f"Validation: ROC-AUC = {metrics['roc_auc']:.4f}, PR-AUC = {metrics['pr_auc']:.4f}, Lift@10% = {metrics['lift_at_top10']:.2f}x")
 
 # 6. Format and save standardized predictions
 df_preds = meta_va[["id_student", "code_module", "code_presentation", "week"]].copy()
+df_preds["model"] = "example_lgbm_model"
+df_preds["k"] = 3
+df_preds["target"] = "label_dropout_k3"
+df_preds["split"] = "val"
 df_preds["y_true"] = y_va
 df_preds["y_prob"] = val_probs
 
 metadata = {
-    "model_name": "example_lgbm_model",
-    "target": "label_dropout_k3",
-    "horizon": 3,
-    "split": "val",
-    "features_used": features,
     "hyperparameters": params,
-    "metrics": metrics,
+    "train_time_sec": train_time_sec,
+    "inference_latency_ms_per_1k": inference_latency_ms_per_1k,
+    "metrics": {k: float(v) for k, v in metrics.items() if k != "ci"},
 }
-write_predictions(df_preds, "predictions/dropout/k3/example_lgbm_val.parquet", metadata)
+out_path = write_predictions(df_preds, metadata=metadata)
+print(f"Successfully saved predictions to: {out_path}")
+```
+
+### Actual Output from Running the Template Script:
+```
+Loaded split='train' (k=3, min_week=2, drop_never_active=True): 330,940 rows across 11,835 learners. Positive rate: 1.850%
+Loaded split='val' (k=3, min_week=2, drop_never_active=True): 164,799 rows across 6,474 learners. Positive rate: 2.367%
+Train time: 3.82s | Latency: 4.88ms / 1k rows
+Validation: ROC-AUC = 0.7616, PR-AUC = 0.0736, Lift@10% = 3.38x
+Successfully saved predictions to: C:\ML_Project\predictions\dropout\k3\example_lgbm_model_val.parquet
+Verified read-back shape: (164799, 10)
 ```
 
 ---
 
-## 7. Model Evaluation & Clustered Paired Bootstrap
+## 9. 5-Fold Cross-Validation, Seed Variance & Headline Reporting Rule
 
-To verify whether your model statistically outperforms the baseline, run a paired bootstrap clustered by `id_student`:
+To ensure reproducibility and statistical validity:
+1. **5-Fold Learner-Grouped CV on Training Set**:
+   Always group by `id_student` (never split rows from the same student across folds):
+   ```python
+   from src.models.harness import learner_group_cv
 
-```python
-from src.models.predictions import read_predictions
-from src.models.harness import evaluate_model, paired_bootstrap
+   for fold, (train_idx, val_idx) in enumerate(learner_group_cv(X_tr, y_tr, groups=meta_tr["id_student"], n_splits=5)):
+       # Train on train_idx, evaluate on val_idx
+       ...
+   ```
+2. **5-Seed Evaluation Rule**:
+   All headline model comparisons must run across 5 fixed random seeds: `[42, 43, 44, 45, 46]`.
+   Report headline results as the **mean ± standard deviation** across the 5 seeds. Do not select or report a single lucky seed.
+3. **Paired Bootstrap Against Baseline**:
+   Always evaluate your model against the saved baseline using `paired_bootstrap` clustered by `id_student`:
+   ```python
+   from src.models.predictions import read_predictions
+   from src.models.harness import paired_bootstrap
 
-# Read your model predictions and the official baseline
-df_mine, meta_mine = read_predictions("predictions/dropout/k3/example_lgbm_val.parquet")
-df_base, meta_base = read_predictions("predictions/dropout/k3/lgbm_v3_val.parquet")
-
-# 1. Point metrics
-metrics_mine = evaluate_model(df_mine["y_true"], df_mine["y_prob"], threshold=0.035)
-metrics_base = evaluate_model(df_base["y_true"], df_base["y_prob"], threshold=0.035)
-
-# 2. Paired bootstrap (500 resamples clustered by id_student)
-boot_res = paired_bootstrap(
-    y_true=df_mine["y_true"],
-    y_prob_a=df_mine["y_prob"],      # Your model
-    y_prob_b=df_base["y_prob"],      # Baseline
-    cluster_ids=df_mine["id_student"], # Cluster strictly by student ID
-    n_boot=500,
-    seed=42,
-)
-
-print(f"Delta ROC: {boot_res['delta_roc']:+.4f} [95% CI: {boot_res['delta_roc_ci'][0]:+.4f}, {boot_res['delta_roc_ci'][1]:+.4f}]")
-print(f"Delta PR:  {boot_res['delta_pr']:+.4f} [95% CI: {boot_res['delta_pr_ci'][0]:+.4f}, {boot_res['delta_pr_ci'][1]:+.4f}]")
-```
-
----
-
-## 8. Prediction File Serialization Contract (`src.models.predictions`)
-
-All prediction files must follow this schema and naming convention:
-- **Directory Path**: `predictions/<target_type>/<horizon>/<model_name>_<split>.parquet`
-  - Example: `predictions/dropout/k3/lstm_sequence_val.parquet`
-  - Example: `predictions/score/snapshots/transformer_w8_val.parquet`
-- **Required Columns**:
-  - `id_student` (integer)
-  - `code_module` (string)
-  - `code_presentation` (string)
-  - `week` (integer)
-  - `y_true` (binary integer for classification, float for regression)
-  - `y_prob` (float in $[0.0, 1.0]$ for classification) OR `y_pred` (float for regression)
-- **Validation Rules**:
-  - `(id_student, code_module, code_presentation, week)` must form a unique key with zero duplicates.
-  - Zero NaN values allowed in predictions or identifiers.
-  - Automatic test quarantine check: rejects `split="test"` and presence of presentation `2014J`.
-- **Required Metadata Dictionary**:
-  ```python
-  metadata = {
-      "model_name": "lstm_sequence_v1",
-      "target": "label_dropout_k3",
-      "horizon": 3,
-      "split": "val",
-      "features_used": [...],
-      "hyperparameters": {...},
-      "git_commit": "...",
-      "timestamp": "2026-11-14T...",
-  }
-  ```
+   df_base, _ = read_predictions("predictions/dropout/k3/lgbm_v3_val.parquet")
+   boot_res = paired_bootstrap(
+       y_true=df_preds["y_true"],
+       y_prob_a=df_preds["y_prob"],
+       y_prob_b=df_base["y_prob"],
+       cluster_ids=df_preds["id_student"], # Clustered strictly by student ID
+       n_boot=500,
+       seed=42,
+   )
+   print(f"Delta ROC: {boot_res['delta_roc']:+.4f} [{boot_res['delta_roc_ci'][0]:+.4f}, {boot_res['delta_roc_ci'][1]:+.4f}]")
+   print(f"Delta PR:  {boot_res['delta_pr']:+.4f} [{boot_res['delta_pr_ci'][0]:+.4f}, {boot_res['delta_pr_ci'][1]:+.4f}]")
+   ```
 
 ---
 
-## 9. MLflow Run Logging (`src.models.harness.log_run`)
+## 10. MLflow Logging Convention (`src.models.harness.log_run`)
 
-Always log your final models, parameters, and artifact paths to MLflow:
+All runs must be logged to the local SQLite database (`sqlite:///mlruns.db`) following this strict naming and tagging standard:
+
+- **Run Name Format**: `<family>/<model>/<variant>/seed<N>`
+  - Example: `sequence/lstm/bidirectional/seed42`
+  - Example: `calibration/platt/isotonic/seed42`
+  - Example: `tree/lgbm/v3/seed42`
+- **Authorized Experiments**: Must be one of `{'dropout', 'onset', 'score', 'grade_band', 'calibration'}`.
+- **Required Tags**: `family`, `model`, `variant`, `seed`, `target`, `horizon`.
 
 ```python
 from src.models.harness import log_run
 
 run_id = log_run(
-    model_name="lstm_sequence_v1",
-    params={"hidden_dim": 64, "num_layers": 2, "learning_rate": 0.001, "batch_size": 256},
-    metrics={"roc_auc": 0.7812, "pr_auc": 0.0845, "brier_score": 0.0218},
+    run_name="sequence/lstm/bidirectional/seed42",
+    params={"hidden_dim": 128, "num_layers": 2, "learning_rate": 0.001, "batch_size": 256, "k": 3, "target": "label_dropout_k3"},
+    metrics={"roc_auc": 0.7815, "pr_auc": 0.0842, "brier_score": 0.0219},
     feature_list=v3_features,
-    artifacts={"model_weights": "models/checkpoints/lstm_best.pt"},
-    experiment_name="oulad_sequence_models"
+    experiment_name="dropout",
 )
-print("Logged run to MLflow with Run ID:", run_id)
 ```
 
 ---
 
-## 10. Hyperparameter Tuning Contract
+## 11. Known Data Quirks & Modeling Caveats
 
-To prevent validation tuning optimism and data leakage:
-1. **Tune Inside Train Split Only**:
-   - Hyperparameter search (Optuna / Grid Search) and early stopping must use **only** the `train` split (`2013B` and `2013J`).
-   - Use 3-fold `GroupKFold` grouped strictly by `id_student`:
-     ```python
-     from src.models.harness import learner_group_cv, tune_with_optuna
-
-     def objective(trial):
-         lr = trial.suggest_float("lr", 1e-4, 1e-1, log=True)
-         # Evaluate across folds using learner_group_cv(X_tr, y_tr, groups=meta_tr["id_student"], n_splits=3)
-         return mean_val_metric
-
-     study = tune_with_optuna(objective, n_trials=30, seed=42)
-     ```
-2. **Score Held-Out Validation Once**:
-   - Refit the model on the full training split using the best hyperparameters.
-   - Score the model **once** on `val` (`2014B`).
-   - **Never early-stop on `2014B`**.
+1. **Weeks 0–1 vs Precourse Activity**:
+   - Activity before Day 0 (`date < 0`) is aggregated into static feature `precourse_clicks`.
+   - The official evaluation grid begins at week 2 (`min_week=2`) to allow 2 weeks of observed course trajectory for lag/momentum features. Weeks 0 and 1 are kept in the data solely for rolling history.
+2. **Presentation Module Coverage**:
+   - **Module CCC**: Present in Validation (2014B) and Test (2014J), but **completely absent from Train** (2013B, 2013J). Models must generalize zero-shot to CCC's curriculum structure.
+   - **Module AAA**: Offered only in J presentations (2013J, 2014J); completely absent from B presentations (2013B, 2014B).
+   - **Module EEE**: Absent from 2013B; present in 2013J, 2014B, 2014J.
+3. **Calibration Under-Prediction vs High-Probability Over-Confidence**:
+   - The model's overall predicted average probability is ~1.9%, slightly under-predicting the validation base rate (2.37%) due to the training prior (1.85%).
+   - However, in high probability bins ($\hat{p} > 0.20$), models are substantially **over-confident** (predicting 24% to 34% probability while empirical attrition is ~11%). Teammate B should implement isotonic regression or temperature scaling to calibrate these probabilities.
+4. **Assessment-Driven Signal Shift**:
+   - Prior to week 6, dropout signal is driven primarily by click intensity, streak dynamics, and inactivity recency.
+   - From week 8 onwards, assessment submission features (`weighted_score_to_date`) dominate model importance.
 
 ---
 
-## 11. Common Pitfalls to Avoid
+## 12. Pull Request (PR) & Collaboration Rules
 
-1. **Point-in-Time Leakage**: Never compute features using future information (clicks or unregistrations after day $7(t+1)-1$). `load_split()` enforces this.
-2. **Student Identity Leakage Across Folds**: A student taking multiple modules (e.g. BBB and DDD) must never have one course in train and another in validation. Always group CV by `id_student`, not by composite key.
-3. **Demographic Attributes in Model Training**: Demographics (`gender`, `imd_band`, `highest_education`, `age_band`, `disability`) are strictly isolated in `data/processed/audit_demographics.parquet` for fairness evaluations. **Never include them in model feature matrices.**
-4. **Modifying Raw Data Files**: Never edit files in `data/raw/`. All pipeline processing must flow deterministically through `python -m src.data.build_all`.
-5. **Accidental Test Set Access**: Never call `load_split("test")` or attempt to access test data. The test split (`2014J`) is reserved exclusively for the final publication audit.
-
----
-
-## 12. FAQ & Troubleshooting
-
-- **Why is module CCC missing from training data?**  
-  Module CCC was first introduced in `2014B` and does not exist in `2013B` or `2013J`. Models must generalize zero-shot to unseen course structures in validation.
-- **Why are GGG assessment weights equal to 0?**  
-  In the OULAD raw catalog, all 10 continuous assessments for module GGG are assigned weight `0.0`, and its final exam is unrecorded. For GGG, `final_score` is computed as the unweighted mean of submitted continuous assessments.
-- **Why does the active non-withdrawn cohort have $N=5,079$ instead of 5,191?**  
-  Exactly 112 students registered for course offerings in `2014B` but never logged a single VLE interaction (`never_active_learner == True`). 100% of these 112 students received a final result of `Fail`. Under our unified forecasting cohort definition, never-active learners are excluded from continuous score regressions ($5,191 - 112 = 5,079$).
-- **How do I run the automated test suite?**  
-  Run the test suite using pytest from the repository root:
-  ```bash
-  python -m pytest tests/
-  ```
-  Ensure all tests pass before submitting pull requests or committing code.
+Before opening a pull request or submitting experimental results:
+1. **Sanctioned Features Only**: Any new feature must be whitelisted in `config/features.yaml`. Do not use undeclared features.
+2. **Zero Demographic Features**: Demographic columns (`gender`, `imd_band`, `highest_education`, `age_band`, `disability`) are quarantined for algorithmic bias audits. Never feed them into model feature sets.
+3. **Zero Test Split Exposure**: Never call `load_split("test")` or access presentation `2014J`.
+4. **All Tests Must Pass**: Run the test suite before pushing:
+   ```bash
+   python -m pytest tests/
+   ```
+5. **Standard Output Parquet**: Ensure your prediction files are generated via `write_predictions` with all schema columns present.
