@@ -6,6 +6,7 @@ mlruns/
 mlruns.db
 *.joblib
 *.parquet
+!predictions/**/*.parquet
 *.npz
 
 # Python cache

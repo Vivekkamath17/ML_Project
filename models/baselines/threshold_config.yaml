@@ -117,4 +117,8 @@ official_champion_v3:
   mcc_optimal_policy:
     threshold: 0.0347
     mcc: 0.1444
-    note: MCC 0.1411 attached to MCC-optimal policy on validation cohort
+    note: chosen on val (threshold chosen on val, in-sample on val)
+  cost_optimal_r10_policy:
+    r: 10
+    threshold: 0.112
+    note: chosen on val (cost-optimal at r=10 for official v3 LightGBM)

@@ -1,5 +1,0 @@
-Policy,"Total Flagged (Denom=6,474)","Learner Recall (Denom=1,394)",Random Recall Ref,Learner Precision,Random Prec Ref,Share of ALL WD within 3w,Share of ALL WD >= 2w,Median Lead (Final Run)
-MCC-Optimal v1 (th=0.025),"4,108 (63.5%)","1,144 (82.1%)",63.5%,27.8%,21.5%,980 (70.3%),"1,064 (76.3%)",6.0 wks
-MCC-Optimal v2 (th=0.025),"4,176 (64.5%)","1,167 (83.7%)",64.5%,27.9%,21.5%,989 (70.9%),"1,088 (78.0%)",6.0 wks
-Cost r=10 (th=0.095),816 (12.6%),322 (23.1%),12.6%,39.5%,21.5%,187 (13.4%),295 (21.2%),5.0 wks
-Capacity Top-10%/week,"2,304 (35.6%)",776 (55.7%),35.6%,33.7%,21.5%,611 (43.8%),711 (51.0%),5.0 wks

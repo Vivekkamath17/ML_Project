@@ -3,54 +3,114 @@
 **Date**: 2026-11-14  
 **Pipeline**: OULAD Baseline Dropout & Forecasting Benchmarks  
 **Quarantined Split**: `2014J` strictly unaccessed (`load_split` guard enforced).  
-**Validation Split**: `2014B` (6,474 enrolled learners, 164,799 rows, base rate 2.367%).  
+**Validation Split**: `2014B` (6,474 enrolled learners at week $\ge 2$, 164,799 rows, base rate 2.367%).  
 
 ---
 
-## 1. Summary of Model Performance
+## 1. Summary of Model Performance & Selection
 
-### 1.1 Champion v1 (39 Features) & Champion v2 (35 Features without Curriculum)
-- **Champion v1 (39 features, 285 trees)**: Val ROC-AUC = **0.7736**, PR-AUC = **0.0735** (3.11× base rate).
-- **Champion v2 (35 features, 329 trees, excluding high-PSI curriculum group)**: Val ROC-AUC = **0.7731**, PR-AUC = **0.0764** (3.23× base rate).
-  - Removing the curriculum group (`pct_resources_visited`, `n_skipped_resources`, `pacing_vs_cohort_median`, `prerequisite_gap`) resolves presentation drift from `n_skipped_resources` (PSI = 0.4808) and boosts validation PR-AUC by **+0.0029**.
-  - LOPO cross-presentation mean: ROC-AUC = 0.7891 ± 0.0116, PR-AUC = 0.0782 ± 0.0084.
-- **Fresh Paired Learner-Bootstrap (500 resamples)**:
-  - LightGBM minus LR-Unweighted: $\Delta$ROC = **+0.0366** [95% CI: +0.0294, +0.0453], $\Delta$PR = **+0.0117** [95% CI: +0.0073, +0.0163] (statistically significant).
-  - LightGBM minus LR-Balanced: $\Delta$ROC = **+0.0298** [95% CI: +0.0227, +0.0384], $\Delta$PR = **+0.0096** [95% CI: +0.0043, +0.0146].
+### 1.1 Official Baseline: LightGBM v3 (38 Features)
+- **Official Model**: LightGBM v3 (38 features = 39 sanctioned features minus `n_skipped_resources`).
+- **Hyperparameters (Train-Only Tuned)**: Tuned strictly on `2013B` and `2013J` via 3-fold inner `GroupKFold` (grouped by `id_student` alone) over 30 Optuna trials:
+  - `max_depth = 3`, `num_leaves = 50`, `learning_rate = 0.0666`, `n_estimators = 463`, `min_child_samples = 352`.
+  - Zero exposure to `2014B` during hyperparameter selection or early stopping.
+- **Validation Performance ($k=3$, week $\ge 2$)**:
+  - ROC-AUC: **0.7757**
+  - PR-AUC: **0.0786** (3.32× base rate of 0.0237)
+  - 5-Seed Headline Mean: ROC-AUC = **0.7724** ($\pm 0.0012$), PR-AUC = **0.0776** ($\pm 0.0007$).
+  - Frozen-threshold MCC: **0.1444** at $\theta = 0.035$ (Note: `mcc_is_in_sample = True`, threshold chosen on val).
 
-### 1.2 Proper Nested Cross-Validation (Zero 2014B Leakage)
-- Evaluated strictly on `2013B` and `2013J` using 3-fold inner `GroupKFold` grouped by `id_student`, searching over `max_depth` $\in [2, 6]$, `num_leaves` $\in [7, 63]$, `n_estimators` $\in [150, 600]$ across 30 Optuna trials.
-- Selected: `max_depth = 3`, `num_leaves = 50`, `learning_rate = 0.0666`, `n_estimators = 463`, `min_child_samples = 352`.
-- Scored once on `2014B`: ROC-AUC = **0.7726**, PR-AUC = **0.0745**.
-- Differs from the champion by only $\Delta\text{ROC} = -0.0010$ and $\Delta\text{PR} = +0.0010$, proving zero validation tuning inflation.
+### 1.2 Model Selection, Selection Optimism & LOPO Context
+- **Candidate Comparison**:
+  - **v1 (All 39 features, 285 trees)**: Val ROC = 0.7736, PR = 0.0735 | LOPO mean ROC = 0.7905, PR = **0.0802**
+  - **v2 (35 features, curriculum group dropped, 329 trees)**: Val ROC = 0.7731, PR = 0.0764 | LOPO mean ROC = 0.7891, PR = 0.0782
+  - **v3 (38 features, `n_skipped_resources` dropped, 463 trees)**: Val ROC = 0.7757, PR = 0.0786 | LOPO mean ROC = 0.7915, PR = 0.0828
+- **Selection Optimism Note**: v3 was selected from the three candidate variants using validation performance on `2014B`. Consequently, its validation metrics carry modest selection optimism.
+- **Statistical Significance & LOPO Interpretation**:
+  - Across the 3 cross-presentation LOPO folds, v3 vs v1 means differ by only +0.0010 ROC-AUC and +0.0026 PR-AUC.
+  - The paired learner-bootstrap 95% confidence interval widths on `2014B` (500 resamples clustered by unique learner) are $\pm 0.012$ on ROC-AUC and $\pm 0.014$ on PR-AUC.
+  - Because LOPO fold mean differences are well under one CI width, v3 does **not** represent a statistically meaningful or measured performance improvement over v1.
+  - LOPO serves strictly as a cross-presentation **stability range** across course structures, not as an alternative validation score.
+
+### 1.3 Empirical Justification for Pruning `n_skipped_resources`: Module Mix & Feature Proxies
+Pruning `n_skipped_resources` is justified by drift in **module mix** across presentations, not performance optimization:
+- **Module Mix Drift**:
+  - Per-module catalog resource counts are nearly identical across presentations (e.g., BBB: 315 in 2013B vs 311 in 2014B; DDD: 428 in 2013B vs 453 in 2014B; FFF: 508 in 2013B vs 478 in 2014B).
+  - The drift is driven by presentation **module mix**: `2013B` contained only large-catalog STEM modules (BBB, DDD, FFF; mean 278.7 skipped), whereas `2014B` introduced low-catalog modules CCC (196 resources), EEE (109 resources), and GGG (124 resources). (Note: module AAA was offered only in J presentations [2013J, 2014J] and never existed in either 2013B or 2014B).
+  - Total VLE catalog entries reflect this mix: 2013B (1,251), 2013J (1,772), 2014B (1,671), 2014J (1,670).
+- **Curriculum Feature Population Stability Index (PSI)**:
+  - `pct_resources_visited`: $\text{PSI} = \mathbf{0.0129}$ (stable, $< 0.10$)
+  - `n_skipped_resources`: $\text{PSI} = \mathbf{0.4808}$ (**severe population shift**, $> 0.25$; Train mean = 249.94 vs Val mean = 189.87)
+  - `pacing_vs_cohort_median`: $\text{PSI} = \mathbf{0.0052}$ (stable, $< 0.10$)
+  - `prerequisite_gap`: $\text{PSI} = \mathbf{0.0130}$ (stable, $< 0.10$)
+- **Module Identity Proxy Audit**:
+  - `n_skipped_resources` acts strongly as an unintended **module-identity proxy**: a simple classifier predicting course module from `n_skipped_resources` alone achieves **48.4% validation accuracy (51.8% balanced accuracy)** across the 6 modules in 2014B.
+  - `studied_credits` acts as a partial module proxy (**34.3% accuracy, 33.8% balanced accuracy**) because degree credit requirements differ across departments (30 vs 60 credits).
+  - `course_progress` exhibits virtually no module proxy capacity (**20.4% accuracy, 16.7% balanced accuracy**, near random chance).
+  - Pruning `n_skipped_resources` eliminates this structural module-proxy artifact while preserving normalized curriculum metrics.
+
+### 1.4 Paired Learner-Bootstrap Baseline Comparison
+Paired bootstrap (500 learner-level resamples on 2014B, week $\ge 2$):
+- **LightGBM v3 minus LR-Unweighted**:
+  - $\Delta\text{ROC-AUC} = \mathbf{+0.0387}$ [95% CI: +0.0312, +0.0475]
+  - $\Delta\text{PR-AUC} = \mathbf{+0.0169}$ [95% CI: +0.0120, +0.0221]
+- **LightGBM v3 minus LR-Balanced**:
+  - $\Delta\text{ROC-AUC} = \mathbf{+0.0319}$ [95% CI: +0.0245, +0.0406]
+  - $\Delta\text{PR-AUC} = \mathbf{+0.0148}$ [95% CI: +0.0091, +0.0203]
 
 ---
 
-## 2. Reconciled Operational Policies & Lead-Time Analysis
+## 2. Reconciled Operational Policies & Lead-Time Analysis (Official v3, $k=3$)
 
-- **Total Enrolled Eligible Learners**: 6,474 unique students at week $\ge 2$.
-- **Total Withdrawn Learners**: 1,394 unique students (21.53% attrition base rate).
+Evaluated on Validation `2014B` at week $\ge 2$:
+- **Eligible Enrolled Cohort**: 6,474 unique students (denominator for flagged population).
+- **Withdrawn Cohort**: 1,395 unique students (denominator for attrition capture; 21.55% base rate).
+- **Reconciliation Note**: $5,079\text{ (active non-withdrawn)} + 1,395\text{ (active withdrawn)} = \mathbf{6,474}$ unique learners. The earlier 1,394 figure arose from filtering on `date_unregistration.notna()`, which omitted learner `(DDD, 2014B, 227826)` who had a proxy unregistration date (`label_is_proxy = True`).
 
-| Policy | Threshold $\theta$ | Flagged Learners (% of 6,474) | Withdrawn Recall (% of 1,394) | Random Recall Ref | Learner Precision | Random Prec Ref | Share of ALL WD within 3w of Unreg | Share of ALL WD $\ge 2$w Before Unreg | Median Lead (Final Run) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **MCC-Optimal v1** | 0.025 | 4,108 (63.5%) | 1,144 (82.1%) | 63.5% | 27.8% | 21.5% | 980 (70.3%) | 1,064 (76.3%) | 6.0 wks |
-| **MCC-Optimal v2** | 0.025 | 4,176 (64.5%) | 1,167 (83.7%) | 64.5% | 27.9% | 21.5% | 989 (70.9%) | 1,088 (78.0%) | 6.0 wks |
-| **Cost $r=10$** | 0.095 | 816 (12.6%) | 322 (23.1%) | 12.6% | 39.5% | 21.5% | 187 (13.4%) | 295 (21.2%) | 5.0 wks |
-| **Capacity Top-10%/wk** | Dynamic | 2,304 (35.6%) | 776 (55.7%) | 35.6% | 33.7% | 21.5% | 611 (43.8%) | 711 (51.0%) | 5.0 wks |
+| Policy | Threshold $\theta$ | Flagged Learners (Denom=6,474) | Withdrawn Caught (Denom=1,395) | Learner Precision | Random Exp | Lift Over Random | Share of ALL WD within 3w | Share of ALL WD $\ge 2$w | Lead Time Q1 / Med / Q3 (Final Run) | Flagged Learners per Catch | Flag-Weeks per Catch | MCC Note |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **MCC-Optimal** | 0.035 | 3,653 (56.4%) | 1,099 (78.8%) | 30.1% | 56.4% | 1.40× | 898 (64.4%) | 1,017 (72.9%) | 3.0 / 5.0 / 12.0 wks | 3.3 | 28.1 | in-sample on val (threshold chosen on val) |
+| **Cost $r=10$** | 0.112 | 1,243 (19.2%) | 498 (35.7%) | 40.1% | 19.2% | 1.86× | 309 (22.2%) | 447 (32.0%) | 2.0 / 5.0 / 11.0 wks | 2.5 | 9.8 | N/A (cost-optimal) |
+| **Capacity Top-10%/wk** | Dynamic | 2,269 (35.0%) | 777 (55.7%) | 34.2% | 35.0% | 1.59× | 616 (44.2%) | 706 (50.6%) | 2.0 / 5.0 / 10.0 wks | 2.9 | 21.2 | N/A (capacity-optimal) |
+
+> **Advisor Summary Translation**: Under the MCC-optimal policy, advisors flag 56.4% of enrolled students across the term to catch 78.8% of eventual dropouts with an average of **3.3 flagged learners per successful catch** (28.1 flag-weeks generated per catch); under weekly resource constraints, the Top-10%/week capacity policy captures 55.7% of dropouts contacting 35.0% of students (**2.9 flagged learners per catch**, 21.2 flag-weeks per catch), while the Cost $r=10$ policy catches 35.7% of dropouts contacting 19.2% of students (**2.5 flagged learners per catch**, 9.8 flag-weeks per catch). Lead times from the final continuous alert run show early warning: Median is 5.0 weeks for all three policies, with upper quartiles (Q3) reaching 10.0 to 12.0 weeks.
 
 ---
 
 ## 3. Shuffled-Label Target Leakage Distribution (20 Permutations)
-- 20 independent learner-level label permutations:
+- 20 independent learner-level label permutations on `2014B`:
   - Mean ROC-AUC = **0.4984** ($\pm 0.0264$), Median = **0.4940**, Min = 0.4637, Max = 0.5573.
-  - Centered exactly at 0.500 chance level, confirming zero structural leakage.
+  - Centered exactly at 0.500 chance level, confirming zero structural target leakage.
 
 ---
 
 ## 4. Assessment Target & Normalization Audit
-- Verified across OULAD: Exam submissions exist **only** for CCC (2014B, 2014J) and DDD (all 4 cohorts). AAA, BBB, EEE, FFF, GGG have 0 recorded exam submissions in `studentAssessment.csv`.
-- `final_score` normalized by recorded assessment weight. Distinction mean = 85.7%, Pass mean = 70.1%, Fail mean = 24.0%, Withdrawn mean = 15.6%.
-- Snapshot-fitted baseline (`mean_score_submitted` fitted per snapshot week on train non-withdrawn):
-  - Week 4: Baseline MAE = 23.53, $R^2 = 0.109$ $\to$ LGBM MAE = **16.19**, $R^2 = \mathbf{0.467}$.
-  - Week 8: Baseline MAE = 17.37, $R^2 = 0.414$ $\to$ LGBM MAE = **13.10**, $R^2 = \mathbf{0.618}$.
-  - Week 12: Baseline MAE = 15.92, $R^2 = 0.511$ $\to$ LGBM MAE = **10.41**, $R^2 = \mathbf{0.743}$.
+
+### 4.1 Cohort Audit & The 112 Never-Active Learners
+- In Validation (2014B), 5,191 non-withdrawn students were enrolled at course start.
+- **Audit Findings**: Exactly 112 learners have `never_active_learner == True` (0 course VLE clicks).
+- **100% of these 112 students finished with `final_result == 'Fail'`** (0 Pass, 0 Distinction).
+- **Unified Cohort Rule for Score Forecasting**: We adopt the unified rule: **exclude never-active learners** ($N = 5,079$ unique active non-withdrawn learners across weeks 2–33; breakdown: 2,574 Pass, 1,721 Fail, 784 Distinction). This rule applies consistently to all regressions and baseline tables.
+
+### 4.2 Module Presentation Assessment Structure & CCC Exam Verification
+- **CCC Assessment Breakdown**: In the raw catalog (`assessments.csv`), CCC lists 10 assessments totaling 300.0 catalog weight (4 CMAs [weight 25], 4 TMAs [weight 75], and 2 Exams [each weight 100: IDs 24290 and 40087]).
+  - Inspection of `studentAssessment.csv` confirms that **only one exam (ID 24290) is recorded** (747 submissions in 2014B); exam 40087 has 0 submissions. Recorded weight is therefore 200.0.
+- **Other Modules**:
+  - **DDD**: Catalog weight 200.0 (100 continuous + 100 exam); both continuous and exam submissions are recorded in `studentAssessment.csv` (recorded weight = 200.0).
+  - **GGG**: Catalog weight 100.0 (10 TMAs with weight 0 + 1 exam with weight 100 unrecorded $\to$ recorded weight = 0.0; evaluated via unweighted TMA mean).
+  - **AAA, BBB, EEE, FFF**: Catalog weight 200.0 (100 continuous recorded + 100 exam unrecorded $\to$ recorded weight = 100.0).
+
+### 4.3 Validation 2014B Performance by Module (Snapshot Weeks 8 and 12)
+Evaluated on the exact same 5,079 active learners (superseding all earlier pooled week 8/12 figures):
+
+| Module | Active $n$ | Cohort Mean Score | Exam Recorded? | Dist Mean | Pass Mean | Fail Mean | W8 Mod-Fit Baseline MAE ($R^2$) | W8 LightGBM MAE ($R^2$) | W12 Mod-Fit Baseline MAE ($R^2$) | W12 LightGBM MAE ($R^2$) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **BBB** | 1,088 | 56.3% | False | 82.0% | 66.9% | 28.0% | 15.23 (0.402) | **11.65 (0.607)** | 14.94 (0.405) | **9.48 (0.743)** |
+| **CCC** | 1,018 | 49.4% | True (1 of 2) | 84.9% | 62.5% | 12.6% | 18.05 (0.475) | **16.33 (0.537)** | 17.36 (0.506) | **15.07 (0.579)** |
+| **DDD** | 728 | 51.1% | True (1 of 1) | 85.5% | 65.3% | 14.1% | 18.28 (0.453) | **13.52 (0.656)** | 17.36 (0.498) | **10.61 (0.765)** |
+| **EEE** | 512 | 63.7% | False | 90.8% | 76.1% | 28.2% | **13.48 (0.532)** | 13.83 (0.523)* | 12.75 (0.588) | **8.96 (0.784)** |
+| **FFF** | 1,026 | 58.4% | False | 90.3% | 73.4% | 27.2% | 16.78 (0.446) | **11.63 (0.692)** | 16.79 (0.455) | **8.66 (0.821)** |
+| **GGG** | 707 | 71.1% | False (Unwtd TMA) | 85.0% | 80.0% | 49.9% | 12.72 (0.423) | **11.86 (0.496)** | 9.75 (0.684) | **8.53 (0.766)** |
+| **Overall** | **5,079** | **57.4%** | - | **85.7%** | **70.1%** | **24.0%** | **15.69 (0.457)** | **12.59 (0.638)** | **14.80 (0.521)** | **9.81 (0.781)** |
+
+*\*Note on EEE at Week 8*: LightGBM MAE (13.83) is slightly worse than the per-module fitted `mean_score_submitted` baseline (13.48) due to small cohort size ($n=512$) and high early submission scores prior to complex assignments. By Week 12, LightGBM substantially outperforms the baseline (8.96 vs 12.75 MAE, $R^2 = 0.784$ vs $0.588$). Earlier pooled snapshot numbers are officially superseded by these per-module figures.

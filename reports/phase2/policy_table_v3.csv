@@ -1,0 +1,4 @@
+Policy,"Unique Flagged (Denom=6,474)","Withdrawn Caught (Denom=1,395)",Learner Precision,Random Expected,Lift Over Random,Share of ALL WD within 3w,Share of ALL WD >= 2w,Lead Time Q1 / Med / Q3 (Final Run),Flagged Learners per Catch,Flag-Weeks per Catch,mcc_is_in_sample,mcc_note
+MCC-Optimal (th=0.035),"3,653 (56.4%)","1,099 (78.8%)",30.1%,56.4%,1.40x,898 (64.4%),"1,017 (72.9%)",3.0 / 5.0 / 12.0 wks,3.3,28.1,True,in-sample on val (threshold chosen on val)
+Cost r=10 (th=0.112),"1,243 (19.2%)",498 (35.7%),40.1%,19.2%,1.86x,309 (22.2%),447 (32.0%),2.0 / 5.0 / 11.0 wks,2.5,9.8,False,N/A (cost-optimal)
+Capacity Top-10%/week,"2,269 (35.0%)",777 (55.7%),34.2%,35.0%,1.59x,616 (44.2%),706 (50.6%),2.0 / 5.0 / 10.0 wks,2.9,21.2,False,N/A (capacity-optimal)
