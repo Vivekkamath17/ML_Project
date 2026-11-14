@@ -1,0 +1,12 @@
+{
+  "best_params": {
+    "depth": 7,
+    "learning_rate": 0.029350541595696514,
+    "l2_leaf_reg": 13.530578450434438,
+    "random_strength": 0.23596666334078442,
+    "use_class_weight": false,
+    "n_estimators": 414,
+    "inner_cv_pr_auc": 0.10273745844369513
+  },
+  "n_estimators": 414
+}

@@ -1,0 +1,320 @@
+{
+  "config": {
+    "sample_size": 5000,
+    "seed": 42,
+    "n_repeats": 3,
+    "metric": "pr_auc",
+    "note": "Permutation importance on fixed 5k-row val subsample (seed=42). RF and MLP use 43 imputed features; trees use raw 38 features. Importance values collapsed to 38 raw features for cross-model comparison."
+  },
+  "model_importances": {
+    "lgbm_v3": {
+      "feature_importance": {
+        "num_of_prev_attempts": -0.002459486816897722,
+        "studied_credits": 0.001576855080695864,
+        "registration_lead_time": 0.0025996733093749344,
+        "precourse_clicks": 0.0025582188910528297,
+        "course_progress": -0.0037864436749744657,
+        "weekly_clicks": 0.0015106212084301472,
+        "days_since_last_activity": 0.0010637171142400675,
+        "weekend_click_ratio": -0.00010434135095215014,
+        "active_days_entropy": 0.00034441585847384826,
+        "share_forumng": 0.00018903301814568452,
+        "share_quiz": -0.0008952689787349773,
+        "share_resource": 0.0008426043298727001,
+        "share_oucontent": -0.0002380689039740702,
+        "share_homepage": -0.001581893783833906,
+        "share_subpage": -0.000119234439471765,
+        "share_url": -0.00016048636301518407,
+        "share_other_types": 1.5159876498115529e-05,
+        "wow_change_clicks": 2.079623164333762e-05,
+        "wow_change_active_days": -6.625134104904414e-05,
+        "rolling_mean_clicks_2w": 0.0008177368991209207,
+        "rolling_mean_clicks_4w": 0.00014613133964819688,
+        "rolling_mean_active_days_2w": 0.0007400006655938346,
+        "rolling_mean_active_days_4w": -1.1905288792949756e-05,
+        "clicks_slope_4w": 0.0009072036701461006,
+        "clicks_ewma": 0.0006006626067704551,
+        "engagement_decay_rate": -0.0003954876166366907,
+        "n_submitted": -0.0002008158571051207,
+        "n_missed": -0.001645170829113719,
+        "mean_score_submitted": 0.00290888681622894,
+        "last_score": 0.0007936237584788933,
+        "score_slope": 0.0008587574748866548,
+        "mean_lateness": 0.0020049429371769983,
+        "weighted_score_to_date": 0.02281789358264182,
+        "n_banked": -3.829697652461365e-05,
+        "banked_score_mean": -0.0005469187134936326,
+        "pct_resources_visited": -0.002097117320464789,
+        "pacing_vs_cohort_median": -0.0027506987744452074,
+        "prerequisite_gap": 0.0008466542159075163
+      },
+      "group_importance": {
+        "static": 0.0004888167892514407,
+        "behavior": 0.0008662575856785107,
+        "temporal": 0.0027588871664441608,
+        "assessment": 0.02695290219317622,
+        "curriculum": -0.00400116187900248
+      }
+    },
+    "xgb": {
+      "feature_importance": {
+        "num_of_prev_attempts": -0.002169302971287359,
+        "studied_credits": 0.0075519046811919205,
+        "registration_lead_time": 0.002391560009532459,
+        "precourse_clicks": 0.004722940848116225,
+        "course_progress": 0.009681219160576635,
+        "weekly_clicks": 0.005172652212538191,
+        "days_since_last_activity": 0.008499090232562881,
+        "weekend_click_ratio": 0.0001319925799291947,
+        "active_days_entropy": 0.001492574604703469,
+        "share_forumng": 0.00039512378258848196,
+        "share_quiz": -0.00021610316001952068,
+        "share_resource": 0.0009449567689089241,
+        "share_oucontent": 0.000790615951137936,
+        "share_homepage": -0.0005653924771541335,
+        "share_subpage": 0.00012232240499694216,
+        "share_url": 0.00026317662781352263,
+        "share_other_types": 0.0001426236026051316,
+        "wow_change_clicks": -0.00036511336529916155,
+        "wow_change_active_days": 0.0,
+        "rolling_mean_clicks_2w": -0.0008474195286102456,
+        "rolling_mean_clicks_4w": 0.00039991416869112245,
+        "rolling_mean_active_days_2w": 0.001602157082022081,
+        "rolling_mean_active_days_4w": -0.0005196588094975215,
+        "clicks_slope_4w": 0.0012571605854679684,
+        "clicks_ewma": -0.00020588924358688754,
+        "engagement_decay_rate": 0.0021448109368714524,
+        "n_submitted": 0.0007002908203187866,
+        "n_missed": -0.0008525338405583014,
+        "mean_score_submitted": 0.0012803883836319206,
+        "last_score": 0.009668592958835645,
+        "score_slope": 0.002784847452941455,
+        "mean_lateness": 0.005659578181668068,
+        "weighted_score_to_date": 0.03283531339427994,
+        "n_banked": -2.690699309787492e-05,
+        "banked_score_mean": 0.000670015969965738,
+        "pct_resources_visited": 0.00872194523056341,
+        "pacing_vs_cohort_median": 0.0016284118334789256,
+        "prerequisite_gap": 0.007073934868663964
+      },
+      "group_importance": {
+        "static": 0.02217832172812988,
+        "behavior": 0.01717363313061102,
+        "temporal": 0.003465961826058808,
+        "assessment": 0.052719586327985374,
+        "curriculum": 0.017424291932706303
+      }
+    },
+    "catboost": {
+      "feature_importance": {
+        "num_of_prev_attempts": 0.0008079197011292191,
+        "studied_credits": 0.005782674307751469,
+        "registration_lead_time": 0.0035681541302738373,
+        "precourse_clicks": 0.006557134805865968,
+        "course_progress": -0.0012491513322365106,
+        "weekly_clicks": 0.004899150583007494,
+        "days_since_last_activity": 0.005505284631364821,
+        "weekend_click_ratio": -0.0002182313485547399,
+        "active_days_entropy": 0.0005720123618814013,
+        "share_forumng": -0.00042553604414381774,
+        "share_quiz": 7.750993110969273e-06,
+        "share_resource": 0.00010684713913360067,
+        "share_oucontent": 0.0004443344562332456,
+        "share_homepage": -0.0009340050951240306,
+        "share_subpage": 0.00043164227304418046,
+        "share_url": -5.1542485320021925e-05,
+        "share_other_types": 8.769061791128832e-06,
+        "wow_change_clicks": 0.0005028547051896074,
+        "wow_change_active_days": -4.559819396449116e-05,
+        "rolling_mean_clicks_2w": 0.0007062101390990736,
+        "rolling_mean_clicks_4w": 0.0018722072739831518,
+        "rolling_mean_active_days_2w": 0.0008167421008926321,
+        "rolling_mean_active_days_4w": -0.00030073849173888983,
+        "clicks_slope_4w": 0.0015849282384419693,
+        "clicks_ewma": -0.00015903854060748956,
+        "engagement_decay_rate": 0.00016454110860942653,
+        "n_submitted": 0.0050316787171336514,
+        "n_missed": 0.0033048113725655712,
+        "mean_score_submitted": 0.0060053706682698105,
+        "last_score": 0.0034678248211336324,
+        "score_slope": 0.007299435683924711,
+        "mean_lateness": 0.007851054271264807,
+        "weighted_score_to_date": 0.018579224844416337,
+        "n_banked": -0.00024319487236531637,
+        "banked_score_mean": -5.441134061507739e-05,
+        "pct_resources_visited": 0.0011459661387792502,
+        "pacing_vs_cohort_median": -0.0060002247834488,
+        "prerequisite_gap": 0.0031271162995325044
+      },
+      "group_importance": {
+        "static": 0.015466731612783982,
+        "behavior": 0.010346476526424231,
+        "temporal": 0.005142108339904991,
+        "assessment": 0.05124179416572813,
+        "curriculum": -0.0017271423451370453
+      }
+    },
+    "rf": {
+      "feature_importance": {
+        "num_of_prev_attempts": -0.00028654754868005783,
+        "studied_credits": 0.003146149283877589,
+        "registration_lead_time": 0.0018576051455975785,
+        "precourse_clicks": 0.0021726925484978573,
+        "course_progress": -0.0017424469760627254,
+        "weekly_clicks": 0.001136797630842623,
+        "days_since_last_activity": 0.005048230650821624,
+        "weekend_click_ratio": -7.573706347793752e-05,
+        "active_days_entropy": 0.0002814947819404362,
+        "share_forumng": -2.5649860284577646e-05,
+        "share_quiz": -0.0003035116866202207,
+        "share_resource": 7.296389473114562e-05,
+        "share_oucontent": 0.0001810539338701437,
+        "share_homepage": -0.00020481096171513316,
+        "share_subpage": 0.0002639629018159108,
+        "share_url": -2.0906258089925522e-05,
+        "share_other_types": 6.093564290725791e-05,
+        "wow_change_clicks": -3.760868914210828e-05,
+        "wow_change_active_days": -3.031993545251725e-05,
+        "rolling_mean_clicks_2w": 0.00045485440520920406,
+        "rolling_mean_clicks_4w": -2.9333078397438445e-05,
+        "rolling_mean_active_days_2w": 0.0007360579187708263,
+        "rolling_mean_active_days_4w": -1.511644422833025e-05,
+        "clicks_slope_4w": 0.0006354819660505476,
+        "clicks_ewma": 0.0013471989828740076,
+        "engagement_decay_rate": 0.0006892368312486907,
+        "n_submitted": -0.0001645584105384549,
+        "n_missed": 0.0023659035679030696,
+        "mean_score_submitted": 0.006502137125255099,
+        "last_score": 0.0034852780047147,
+        "score_slope": -8.712282070261201e-05,
+        "mean_lateness": 0.0011904536560932062,
+        "weighted_score_to_date": 0.020320584378911988,
+        "n_banked": -7.953672501286499e-06,
+        "banked_score_mean": -1.8959543748614527e-05,
+        "pct_resources_visited": 0.004065841920782502,
+        "pacing_vs_cohort_median": -0.002562013062232619,
+        "prerequisite_gap": 0.0030199549953735896
+      },
+      "feature_importance_43": {
+        "num_of_prev_attempts": -0.00028654754868005783,
+        "studied_credits": 0.003146149283877589,
+        "registration_lead_time": 0.0018576051455975785,
+        "precourse_clicks": 0.0021726925484978573,
+        "course_progress": -0.0017424469760627254,
+        "weekly_clicks": 0.001136797630842623,
+        "days_since_last_activity": 0.005048230650821624,
+        "weekend_click_ratio": -7.573706347793752e-05,
+        "active_days_entropy": 0.0002814947819404362,
+        "share_forumng": -2.5649860284577646e-05,
+        "share_quiz": -0.0003035116866202207,
+        "share_resource": 7.296389473114562e-05,
+        "share_oucontent": 0.0001810539338701437,
+        "share_homepage": -0.00020481096171513316,
+        "share_subpage": 0.0002639629018159108,
+        "share_url": -2.0906258089925522e-05,
+        "share_other_types": 6.093564290725791e-05,
+        "wow_change_clicks": -3.760868914210828e-05,
+        "wow_change_active_days": -3.031993545251725e-05,
+        "rolling_mean_clicks_2w": 0.00045485440520920406,
+        "rolling_mean_clicks_4w": -2.9333078397438445e-05,
+        "rolling_mean_active_days_2w": 0.0007360579187708263,
+        "rolling_mean_active_days_4w": -1.511644422833025e-05,
+        "clicks_slope_4w": 0.0006354819660505476,
+        "clicks_ewma": 0.0013471989828740076,
+        "engagement_decay_rate": 0.0006892368312486907,
+        "n_submitted": -0.0001645584105384549,
+        "n_missed": 0.0023659035679030696,
+        "mean_score_submitted": 0.006502137125255099,
+        "last_score": 0.0034852780047147,
+        "score_slope": -8.712282070261201e-05,
+        "mean_lateness": 0.0011904536560932062,
+        "weighted_score_to_date": 0.020320584378911988,
+        "n_banked": -7.953672501286499e-06,
+        "banked_score_mean": -1.8959543748614527e-05,
+        "pct_resources_visited": 0.004065841920782502,
+        "pacing_vs_cohort_median": -0.002562013062232619,
+        "prerequisite_gap": 0.0030199549953735896,
+        "mean_score_submitted_is_missing": -0.00028225535266382845,
+        "last_score_is_missing": -0.0008405826378211217,
+        "score_slope_is_missing": -0.0011880301577531273,
+        "mean_lateness_is_missing": -0.00032493629278121844,
+        "banked_score_mean_is_missing": -1.676941929007932e-05
+      },
+      "group_importance": {
+        "static": 0.005147452453230242,
+        "behavior": 0.006414823606741346,
+        "temporal": 0.0037504519569328825,
+        "assessment": 0.033585762285387094,
+        "curriculum": 0.004523783853923473
+      }
+    }
+  },
+  "spearman_rank_correlation": {
+    "lgbm_v3": {
+      "lgbm_v3": 1.0,
+      "xgb": 0.4347,
+      "catboost": 0.6755,
+      "rf": 0.6345
+    },
+    "xgb": {
+      "lgbm_v3": 0.4347,
+      "xgb": 1.0,
+      "catboost": 0.5056,
+      "rf": 0.4949
+    },
+    "catboost": {
+      "lgbm_v3": 0.6755,
+      "xgb": 0.5056,
+      "catboost": 1.0,
+      "rf": 0.6317
+    },
+    "rf": {
+      "lgbm_v3": 0.6345,
+      "xgb": 0.4949,
+      "catboost": 0.6317,
+      "rf": 1.0
+    }
+  },
+  "consensus_features_top10": [
+    {
+      "feature": "weighted_score_to_date",
+      "avg_normalized_rank": 1.0
+    },
+    {
+      "feature": "days_since_last_activity",
+      "avg_normalized_rank": 0.875
+    },
+    {
+      "feature": "studied_credits",
+      "avg_normalized_rank": 0.868421052631579
+    },
+    {
+      "feature": "mean_score_submitted",
+      "avg_normalized_rank": 0.855263157894737
+    },
+    {
+      "feature": "precourse_clicks",
+      "avg_normalized_rank": 0.8486842105263157
+    },
+    {
+      "feature": "mean_lateness",
+      "avg_normalized_rank": 0.8486842105263157
+    },
+    {
+      "feature": "last_score",
+      "avg_normalized_rank": 0.8092105263157895
+    },
+    {
+      "feature": "registration_lead_time",
+      "avg_normalized_rank": 0.7960526315789473
+    },
+    {
+      "feature": "weekly_clicks",
+      "avg_normalized_rank": 0.7763157894736842
+    },
+    {
+      "feature": "prerequisite_gap",
+      "avg_normalized_rank": 0.7763157894736842
+    }
+  ]
+}

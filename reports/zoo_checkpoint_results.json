@@ -1,0 +1,266 @@
+{
+  "xgb": {
+    "model_name": "XGBoost",
+    "best_params": {
+      "max_depth": 4,
+      "learning_rate": 0.07230441145181273,
+      "min_child_weight": 20.256843495722777,
+      "subsample": 0.8791542610321845,
+      "colsample_bytree": 0.8134290511779104,
+      "reg_alpha": 3.911680264630042,
+      "reg_lambda": 5.241977602021898,
+      "use_class_weight": false,
+      "n_estimators": 210,
+      "inner_cv_pr_auc": 0.10331335833786959
+    },
+    "chosen_n_estimators": 210,
+    "inner_cv_pr_auc": 0.10331335833786959,
+    "seed_mean_roc": 0.77467559515503,
+    "seed_std_roc": 0.0006964397013734028,
+    "seed_mean_pr": 0.07757630857608652,
+    "seed_std_pr": 0.0010182717986866924,
+    "seed_mean_brier": 0.022512559521373397,
+    "train_time_sec": 5.817160919867456,
+    "latency_ms_per_1k": 0.25286003947257996,
+    "model_size_mb": 0.35730552673339844,
+    "paired_vs_lgbm": {
+      "delta_roc": -8.716220560733845e-05,
+      "delta_roc_ci": [
+        -0.0017340060071140862,
+        0.0014276273051649284
+      ],
+      "delta_pr": -0.0005315131596920347,
+      "delta_pr_ci": [
+        -0.002180005361442772,
+        0.0013480185358633438
+      ],
+      "n_boot": 500,
+      "n_clusters": 6170
+    },
+    "top_features": [
+      [
+        "weighted_score_to_date",
+        0.12924558683972062
+      ],
+      [
+        "studied_credits",
+        0.10471412099066246
+      ],
+      [
+        "rolling_mean_active_days_2w",
+        0.059608152095181034
+      ],
+      [
+        "rolling_mean_clicks_2w",
+        0.05486578863682889
+      ],
+      [
+        "n_missed",
+        0.05468251165774456
+      ],
+      [
+        "days_since_last_activity",
+        0.05106774592032076
+      ],
+      [
+        "weekly_clicks",
+        0.04945138685055002
+      ],
+      [
+        "course_progress",
+        0.038273196472720344
+      ],
+      [
+        "active_days_entropy",
+        0.03368589674402969
+      ],
+      [
+        "prerequisite_gap",
+        0.02581368390960629
+      ]
+    ]
+  },
+  "catboost": {
+    "model_name": "CatBoost",
+    "best_params": {
+      "depth": 7,
+      "learning_rate": 0.029350541595696514,
+      "l2_leaf_reg": 13.530578450434438,
+      "random_strength": 0.23596666334078442,
+      "use_class_weight": false,
+      "n_estimators": 414,
+      "inner_cv_pr_auc": 0.10273745844369513
+    },
+    "chosen_n_estimators": 414,
+    "inner_cv_pr_auc": 0.10273745844369513,
+    "seed_mean_roc": 0.7772773614611959,
+    "seed_std_roc": 0.0006097888094631749,
+    "seed_mean_pr": 0.07814649688443767,
+    "seed_std_pr": 0.0005421893498464857,
+    "seed_mean_brier": 0.022515014058281272,
+    "train_time_sec": 9.436143040284515,
+    "latency_ms_per_1k": 1.5240998938679695,
+    "model_size_mb": 0.8512039184570312,
+    "paired_vs_lgbm": {
+      "delta_roc": 0.0025088546785970722,
+      "delta_roc_ci": [
+        -0.0008399544533542801,
+        0.005824886541076644
+      ],
+      "delta_pr": -5.322853318895371e-05,
+      "delta_pr_ci": [
+        -0.002522137166608964,
+        0.002208932203924154
+      ],
+      "n_boot": 500,
+      "n_clusters": 6170
+    },
+    "top_features": [
+      [
+        "course_progress",
+        0.15732037418299488
+      ],
+      [
+        "weighted_score_to_date",
+        0.13194656283227144
+      ],
+      [
+        "studied_credits",
+        0.10072156237030626
+      ],
+      [
+        "n_missed",
+        0.09616648596808806
+      ],
+      [
+        "n_submitted",
+        0.06072151638299994
+      ],
+      [
+        "precourse_clicks",
+        0.05009657499155034
+      ],
+      [
+        "days_since_last_activity",
+        0.04450663763416406
+      ],
+      [
+        "pacing_vs_cohort_median",
+        0.03835070903410448
+      ],
+      [
+        "mean_score_submitted",
+        0.03781537663640617
+      ],
+      [
+        "registration_lead_time",
+        0.031935850036015526
+      ]
+    ]
+  },
+  "rf": {
+    "model_name": "Random Forest",
+    "best_params": {
+      "n_estimators": 300,
+      "max_depth": 15,
+      "min_samples_leaf": 129,
+      "max_features": 0.37163615122418386,
+      "use_class_weight": true,
+      "inner_cv_pr_auc": 0.10102734093776618,
+      "subsample_ratio": 0.25
+    },
+    "inner_cv_pr_auc": 0.10102734093776618,
+    "seed_mean_roc": 0.7758975650341642,
+    "seed_std_roc": 0.0002612957852756717,
+    "seed_mean_pr": 0.07764517280345287,
+    "seed_std_pr": 0.00015963840289928263,
+    "seed_mean_brier": 0.030510988294776616,
+    "train_time_sec": 123.67687801979483,
+    "latency_ms_per_1k": 54.22088000923395,
+    "model_size_mb": 28.432671546936035,
+    "paired_vs_lgbm": {
+      "delta_roc": 0.0006383002302932095,
+      "delta_roc_ci": [
+        -0.003568517987475045,
+        0.005040014489763642
+      ],
+      "delta_pr": -0.0008440753371351528,
+      "delta_pr_ci": [
+        -0.003820688645985027,
+        0.0024075454796297665
+      ],
+      "n_boot": 500,
+      "n_clusters": 6170
+    },
+    "top_features": [
+      [
+        "weighted_score_to_date",
+        0.1605682210908221
+      ],
+      [
+        "course_progress",
+        0.08333709436599876
+      ],
+      [
+        "studied_credits",
+        0.07204906173985484
+      ],
+      [
+        "n_missed",
+        0.06900314433137406
+      ],
+      [
+        "days_since_last_activity",
+        0.05176993240800671
+      ],
+      [
+        "pct_resources_visited",
+        0.05061668794483857
+      ],
+      [
+        "prerequisite_gap",
+        0.04770076367022911
+      ],
+      [
+        "mean_score_submitted",
+        0.044364155296031035
+      ],
+      [
+        "precourse_clicks",
+        0.04234835547389617
+      ],
+      [
+        "pacing_vs_cohort_median",
+        0.03842988585175955
+      ]
+    ]
+  },
+  "rf_default_comparison": {
+    "default_params": {
+      "n_estimators": 200,
+      "max_depth": 12,
+      "min_samples_leaf": 100,
+      "max_features": 0.5,
+      "use_class_weight": false
+    },
+    "seed_prs": [
+      0.07749060981092998,
+      0.07730572843487558,
+      0.07763635275610362,
+      0.07783122239835466,
+      0.0784972632417508
+    ],
+    "seed_rocs": [
+      0.7722367501681612,
+      0.7711614025777888,
+      0.7732671556548956,
+      0.7720848916308284,
+      0.773420561200493
+    ],
+    "seed_mean_pr": 0.07775223532840292,
+    "seed_std_pr": 0.0004104998506236448,
+    "seed_mean_roc": 0.7724341522464334,
+    "headline_pr": 0.07808803148222725,
+    "headline_roc": 0.7729731356613863
+  }
+}

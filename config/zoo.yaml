@@ -1,0 +1,57 @@
+# Phase 3 Model Zoo Configuration
+experiment:
+  name: dropout
+  target: label_dropout_k3
+  horizon_k: 3
+  min_week: 2
+  drop_never_active: true
+  n_trials: 30
+  n_inner_splits: 5
+  early_stopping_rounds: 50
+  seeds: [42, 101, 2024, 7, 999]
+  moderate_pos_weight: 5.0  # Shared moderate class weight for imbalanced variants
+  rf_tune_subsample_ratio: 0.25  # 25% learner-grouped subsample for RF Optuna tuning
+  hardware:
+    cpu: Intel Core 10-core / 16-thread
+    ram_gb: 15.65
+    gpu: NVIDIA GeForce RTX 4050 Laptop GPU
+
+models:
+  xgboost:
+    family: tree
+    model_name: xgb
+    preprocessing: raw
+    max_estimators: 800
+    param_space:
+      max_depth: [2, 8]
+      learning_rate: [0.02, 0.15]
+      min_child_weight: [5.0, 100.0]
+      subsample: [0.5, 1.0]
+      colsample_bytree: [0.5, 1.0]
+      reg_alpha: [0.0, 10.0]
+      reg_lambda: [0.0, 10.0]
+      use_class_weight: [false, true]  # false => scale_pos_weight=1.0; true => 5.0
+
+  catboost:
+    family: tree
+    model_name: catboost
+    preprocessing: raw
+    max_iterations: 800
+    param_space:
+      depth: [3, 8]
+      learning_rate: [0.02, 0.15]
+      l2_leaf_reg: [1.0, 20.0]
+      random_strength: [0.1, 10.0]
+      use_class_weight: [false, true]  # false => None; true => auto_class_weights='SqrtBalanced' (effective ~5.0)
+
+  random_forest:
+    family: bagging
+    model_name: rf
+    preprocessing: imputed
+    param_space:
+      n_estimators: [100, 400]
+      max_depth: [6, 20]
+      min_samples_leaf: [20, 200]
+      max_features: [0.3, 1.0]
+      use_class_weight: [false, true]  # false => None; true => moderate 5.0
+

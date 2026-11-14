@@ -1,0 +1,9 @@
+{
+  "n_estimators": 300,
+  "max_depth": 15,
+  "min_samples_leaf": 129,
+  "max_features": 0.37163615122418386,
+  "use_class_weight": true,
+  "inner_cv_pr_auc": 0.10102734093776618,
+  "subsample_ratio": 0.25
+}
