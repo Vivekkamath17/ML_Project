@@ -1,0 +1,41 @@
+finalists:
+  - model: lgbm_v3
+    family: tree
+    calibrator: platt
+    calibrator_path: models/calibration/lgbm_v3_platt_calibrator.joblib
+    val_brier_oof: 0.022442
+    val_ece_oof: 0.001612
+    val_roc_auc: 0.7756
+    val_pr_auc: 0.0786
+    training_cost_sec: 3.82
+    inference_latency_ms_per_1k: 4.88
+    rationale: Official Phase 2 champion with the lowest post-calibration Brier score (0.022442) and extremely low inference latency (4.88ms/1k rows). Platt scaling corrects both global under-prediction and high-probability over-confidence without degrading ranking (ROC-AUC 0.7756).
+
+  - model: catboost
+    family: tree
+    calibrator: isotonic
+    calibrator_path: models/calibration/catboost_isotonic_calibrator.joblib
+    val_brier_oof: 0.022448
+    val_ece_oof: 0.000471
+    val_roc_auc: 0.7760
+    val_pr_auc: 0.0792
+    training_cost_sec: 18.45
+    inference_latency_ms_per_1k: 12.10
+    rationale: Achieves the highest raw discrimination (ROC-AUC 0.7782, PR-AUC 0.0792) and the lowest post-calibration ECE across all models (0.000471) via non-parametric isotonic regression. Statistically tied with LightGBM on ROC-AUC, providing high-precision probability calibration.
+
+  - model: rf
+    family: ensemble_bagging
+    calibrator: platt
+    calibrator_path: models/calibration/rf_platt_calibrator.joblib
+    val_brier_oof: 0.022448
+    val_ece_oof: 0.001530
+    val_roc_auc: 0.7762
+    val_pr_auc: 0.0781
+    training_cost_sec: 45.20
+    inference_latency_ms_per_1k: 24.30
+    rationale: Provides critical architectural diversity (bagged unpruned random forest vs gradient boosters). Pre-calibration Brier was distorted (0.030489) due to train class weight = 5; Platt calibration repairs the probability distortion completely, bringing Brier down to 0.022448 and ECE to 0.001530 with strong ROC-AUC (0.7762).
+
+selection_notes:
+  - All gradient boosters (LightGBM, XGBoost, CatBoost) are statistically tied with each other (paired bootstrap delta CIs span zero).
+  - Finalists were selected prioritizing calibration quality (Brier & ECE), model family diversity (Random Forest bagging + LightGBM/CatBoost boosting), and operational deployment cost.
+  - Zero evaluation was performed on test presentation 2014J. Calibrators are stored for the future blinded test run.
