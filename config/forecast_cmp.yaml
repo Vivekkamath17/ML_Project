@@ -1,0 +1,34 @@
+seed_list: [42, 101, 2024, 7, 999]
+model_list:
+  score:
+    - train_mean
+    - per_snapshot_linear_mean
+    - per_snapshot_linear_module
+    - ridge
+    - random_forest
+    - lightgbm
+    - xgboost
+    - catboost
+  grade_band:
+    - majority_class
+    - multinomial_logistic
+    - random_forest
+    - lightgbm
+    - xgboost
+    - catboost
+cv:
+  n_folds: 5
+  group: id_student
+  inner_trials: 15
+bootstrap:
+  n_resamples: 500
+  cluster_by: id_student
+features_path: data/processed/features_weekly.parquet
+labels_path: labels/score_audit.csv
+snapshot_weeks: [4, 8, 12]
+output_dirs:
+  predictions_score: predictions/score/
+  predictions_grade: predictions/grade_band/
+  calibration: predictions/calibration/
+  calibrator_models: models/calibration/
+  reports: reports/niranjan/
