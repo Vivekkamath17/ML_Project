@@ -4,7 +4,7 @@ data/interim/
 data/processed/
 mlruns/
 mlruns.db
-*.joblib
+
 *.parquet
 !predictions/**/*.parquet
 *.npz
