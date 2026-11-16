@@ -21,11 +21,10 @@ def render_calibration_page():
     
     # 1. Critical Calibration Takeaways Callout
     st.info(
-        "💡 **Key Calibration Finding**:<br>"
-        "- **Overall Under-Prediction**: Raw models predict an average probability of ~1.9%, slightly below the validation base rate (2.37%), reflecting the lower training prior (1.85%).<br>"
-        "- **High-Risk Over-Confidence**: In high predicted risk bins (p_pred > 0.20), raw uncalibrated models are substantially overconfident (predicting 25%–35% risk where empirical attrition is ~10%–12%).<br>"
-        "- **Post-Hoc Calibration**: Isotonic regression and Platt scaling successfully eliminate this distortion, reducing Expected Calibration Error (ECE) from ~0.005 to < 0.001.",
-        unsafe_allow_html=True
+        "💡 **Key Calibration Finding**:\n\n"
+        "- **Overall Under-Prediction**: Raw models predict an average probability of ~1.9%, slightly below the validation base rate (2.37%), reflecting the lower training prior (1.85%).\n"
+        "- **High-Risk Over-Confidence**: In high predicted risk bins (p_pred > 0.20), raw uncalibrated models are substantially overconfident (predicting 25%–35% risk where empirical attrition is ~10%–12%).\n"
+        "- **Post-Hoc Calibration**: Isotonic regression and Platt scaling successfully eliminate this distortion, reducing Expected Calibration Error (ECE) from ~0.005 to < 0.001."
     )
     
     st.markdown("---")

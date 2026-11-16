@@ -3,6 +3,7 @@ Page 3: Learner Trajectory & Early Warning Inspection.
 """
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from app.data_loader import (
@@ -147,7 +148,7 @@ def render_learner_page():
             st.plotly_chart(fig_shap, use_container_width=True)
         else:
             st.warning(
-                "⏳ **SHAP Top-5 Explanations: Pending Teammate Submission**<br>"
+                "⏳ **SHAP Top-5 Explanations: Pending Teammate Submission**\n\n"
                 "Awaiting teammate delivery conforming to contract `reports/shap/<model>_k3_val_top5.parquet`. "
                 "Feature attribution visualizations will automatically populate once computed.",
                 icon="⚠️"
@@ -160,12 +161,21 @@ def render_learner_page():
         st.caption(f"Status for student {selected_student_id} at Week {inspected_week}:")
         
         week_row = traj_df[traj_df["week"] == inspected_week].iloc[0]
+
+        def _fmt(val):
+            try:
+                if pd.isna(val):
+                    return "N/A"
+                return f"{float(val):.3f}"
+            except (TypeError, ValueError):
+                return "N/A"
+
         st.markdown(
-            f"- **Predicted Dropout Risk (LightGBM v3)**: `{week_row['prob_lgbm_v3']:.3f}` ({'⚠️ Flagged' if week_row.get('flagged_top10') == 1 else 'Normal'})\n"
-            f"- **Predicted Dropout Risk (CatBoost)**: `{week_row.get('prob_catboost', np.nan):.3f}`\n"
-            f"- **Predicted Dropout Risk (XGBoost)**: `{week_row.get('prob_xgb', np.nan):.3f}`\n"
-            f"- **Predicted Dropout Risk (Random Forest)**: `{week_row.get('prob_rf', np.nan):.3f}`\n"
-            f"- **Predicted Dropout Risk (Logistic Reg)**: `{week_row.get('prob_lr_39feat_unweighted', np.nan):.3f}`"
+            f"- **Predicted Dropout Risk (LightGBM v3)**: `{_fmt(week_row.get('prob_lgbm_v3'))}` ({'⚠️ Flagged' if week_row.get('flagged_top10') == 1 else 'Normal'})\n"
+            f"- **Predicted Dropout Risk (CatBoost)**: `{_fmt(week_row.get('prob_catboost'))}`\n"
+            f"- **Predicted Dropout Risk (XGBoost)**: `{_fmt(week_row.get('prob_xgb'))}`\n"
+            f"- **Predicted Dropout Risk (Random Forest)**: `{_fmt(week_row.get('prob_rf'))}`\n"
+            f"- **Predicted Dropout Risk (Logistic Reg)**: `{_fmt(week_row.get('prob_lr_39feat_unweighted'))}`"
         )
         st.info("ℹ️ *Note on Raw Weekly Feature Table*: Raw clickstream tables are stored outside the Git repository. Trajectory curves and risk indicators are rendered directly from verifiable model outputs.")
 

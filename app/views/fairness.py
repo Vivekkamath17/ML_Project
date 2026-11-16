@@ -17,12 +17,11 @@ def render_fairness_page():
     
     # Critical Scientific Caveat Alert Box
     st.warning(
-        "⚠️ **Methodological & Governance Disclosures**:<br>"
-        "1. **Single Validation Presentation**: All fairness figures are computed on `2014B`. Geographic and demographic baseline distributions vary across cohorts.<br>"
+        "⚠️ **Methodological & Governance Disclosures**:\n\n"
+        "1. **Single Validation Presentation**: All fairness figures are computed on `2014B`. Geographic and demographic baseline distributions vary across cohorts.\n"
         "2. **Kleinberg's Impossibility Theorem**: Because baseline dropout rates differ systematically across demographic cohorts, "
-        "**Equal Opportunity (equal TPR) and Predictive Parity (equal Precision) cannot simultaneously hold**.<br>"
-        "3. **Absence of Bias is Not Proven**: Parity in statistical metrics does not guarantee equity in real-world academic counseling.",
-        unsafe_allow_html=True
+        "**Equal Opportunity (equal TPR) and Predictive Parity (equal Precision) cannot simultaneously hold**.\n"
+        "3. **Absence of Bias is Not Proven**: Parity in statistical metrics does not guarantee equity in real-world academic counseling."
     )
     
     fairness_tables = load_fairness_data()
@@ -82,6 +81,22 @@ def render_fairness_page():
     st.subheader(f"2. Subgroup Breakdown: `{selected_attr}` ({selected_model})")
     
     sub_metrics = metrics_df[(metrics_df["model"] == selected_model) & (metrics_df["attribute"] == selected_attr)].copy()
+    if "group" in sub_metrics.columns and "subgroup" not in sub_metrics.columns:
+        sub_metrics["subgroup"] = sub_metrics["group"]
+    if "recall_tpr" in sub_metrics.columns and "tpr" not in sub_metrics.columns:
+        sub_metrics["tpr"] = sub_metrics["recall_tpr"]
+    if "selection_rate_ci_lower" in sub_metrics.columns and "selection_rate_ci_low" not in sub_metrics.columns:
+        sub_metrics["selection_rate_ci_low"] = sub_metrics["selection_rate_ci_lower"]
+        sub_metrics["selection_rate_ci_high"] = sub_metrics["selection_rate_ci_upper"]
+    if "recall_tpr_ci_lower" in sub_metrics.columns and "tpr_ci_low" not in sub_metrics.columns:
+        sub_metrics["tpr_ci_low"] = sub_metrics["recall_tpr_ci_lower"]
+        sub_metrics["tpr_ci_high"] = sub_metrics["recall_tpr_ci_upper"]
+    if "precision_ci_lower" in sub_metrics.columns and "precision_ci_low" not in sub_metrics.columns:
+        sub_metrics["precision_ci_low"] = sub_metrics["precision_ci_lower"]
+        sub_metrics["precision_ci_high"] = sub_metrics["precision_ci_upper"]
+    if "roc_auc_ci_lower" in sub_metrics.columns and "roc_auc_ci_low" not in sub_metrics.columns:
+        sub_metrics["roc_auc_ci_low"] = sub_metrics["roc_auc_ci_lower"]
+        sub_metrics["roc_auc_ci_high"] = sub_metrics["roc_auc_ci_upper"]
     
     display_sub = []
     for _, r in sub_metrics.iterrows():
@@ -132,14 +147,15 @@ def render_fairness_page():
     st.subheader("3. Intersectional Compound Disparities")
     st.markdown("Inspection of compound disparities across sensitive pairs (`gender × age_band`, `gender × imd_band`, `gender × highest_education`).")
     if not inter_df.empty:
+        pair_col = "pair" if "pair" in inter_df.columns else "intersection_pair"
         col_i1, col_i2 = st.columns([1, 2])
         with col_i1:
-            inter_pairs = inter_df["intersection_pair"].unique().tolist()
+            inter_pairs = inter_df[pair_col].unique().tolist()
             sel_pair = st.selectbox("Select Intersectional Dimension", inter_pairs)
         with col_i2:
             st.caption("Subgroups with fewer than 300 learners or 30 positives are flagged with small-sample warnings.")
             
-        sub_inter = inter_df[inter_df["intersection_pair"] == sel_pair]
+        sub_inter = inter_df[inter_df[pair_col] == sel_pair]
         st.dataframe(sub_inter, use_container_width=True, hide_index=True)
 
     st.markdown("---")
