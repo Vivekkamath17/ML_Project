@@ -1,0 +1,21 @@
+{
+  "presentation": "2014B",
+  "total_enrolled_learners": 6474,
+  "total_eventual_withdrawn": 1395,
+  "learner_base_rate": 0.2154772937905468,
+  "total_learner_weeks": 164799,
+  "positive_events": 3901,
+  "week_base_rate": 0.023671260141141633,
+  "weeks_range": [
+    2,
+    30
+  ],
+  "modules": [
+    "BBB",
+    "CCC",
+    "DDD",
+    "EEE",
+    "FFF",
+    "GGG"
+  ]
+}
