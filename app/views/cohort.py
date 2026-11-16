@@ -110,12 +110,11 @@ def render_cohort_page():
     # 3. Cohort Filters and Risk Tiers
     st.subheader("3. Cohort Filters & Risk Tier Distribution")
     st.markdown(
-        "Risk tiers are defined operationally from weekly caseload capacity cuts (rather than arbitrary absolute thresholds):<br>"
-        "- **Tier 1 (Critical Risk)**: Top 5% weekly caseload.<br>"
-        "- **Tier 2 (High Risk)**: 5%–10% weekly caseload.<br>"
-        "- **Tier 3 (Moderate Risk)**: 10%–20% weekly caseload.<br>"
-        "- **Tier 4 (Standard / Low Risk)**: Bottom 80% weekly caseload.",
-        unsafe_allow_html=True
+        "Risk tiers are defined operationally from weekly caseload capacity cuts (rather than arbitrary absolute thresholds):\n\n"
+        "- **Tier 1 (Critical Risk)**: Top 5% weekly caseload.\n"
+        "- **Tier 2 (High Risk)**: 5%–10% weekly caseload.\n"
+        "- **Tier 3 (Moderate Risk)**: 10%–20% weekly caseload.\n"
+        "- **Tier 4 (Standard / Low Risk)**: Bottom 80% weekly caseload."
     )
     
     if not learner_df.empty:
