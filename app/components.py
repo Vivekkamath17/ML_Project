@@ -130,6 +130,10 @@ def plot_learner_trajectory(
         "prob_xgb": ("#ff7f0e", "XGBoost"),
         "prob_rf": ("#9467bd", "Random Forest"),
         "prob_lr_39feat_unweighted": ("#d62728", "Logistic Regression"),
+        "prob_gru_multi_dropout": ("#17becf", "GRU Multi-Task (w=8, Dropout)"),
+        "prob_lstm_dropout": ("#e377c2", "LSTM (w=4, Dropout)"),
+        "prob_tcn_dropout": ("#bcbd22", "TCN (w=4, Dropout)"),
+        "prob_lstm_onset": ("#8c564b", "LSTM (w=8, Onset Champion)"),
     }
     
     for c in prob_cols:
