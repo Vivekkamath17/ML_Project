@@ -337,3 +337,30 @@ Before opening a pull request or submitting experimental results:
    python -m pytest tests/
    ```
 5. **Standard Output Parquet**: Ensure your prediction files are generated via `write_predictions` with all schema columns present.
+
+---
+
+## 13. Teammate Contract: SHAP Top-5 Feature Contributions
+To enable automatic rendering in the interactive Streamlit dashboard (`app/` Learner Detail page), teammate SHAP explanations must follow this standard parquet schema:
+- **Location**: `reports/shap/<model>_k3_val_top5.parquet`
+- **Required Columns**:
+  - `code_module` (string)
+  - `code_presentation` (string)
+  - `id_student` (int64)
+  - `week` (int64)
+  - `feature` (string)
+  - `shap_value` (float64)
+  - `rank` (int64, 1 to 5)
+- **Degradation**: If this file is absent, the dashboard automatically renders a clean "Pending teammate delivery" status card without crashing.
+
+---
+
+## 14. Teammate Contract: Score and Grade Band Forecasting Predictions
+To support final score regression and multi-class grade band forecasts in the dashboard and reports:
+- **Continuous Score Regression**:
+  - **Location**: `predictions/score/<model>_w<week>_val.parquet` or `predictions/score/snapshot/<model>_val.parquet`
+  - **Required Columns**: `code_module`, `code_presentation`, `id_student`, `week`, `y_true`, `y_pred`
+- **Multi-Class Grade Band Forecasting**:
+  - **Location**: `predictions/grade_band/<model>_w<week>_val.parquet` or `predictions/grade_band/snapshot/<model>_val.parquet`
+  - **Required Columns**: `code_module`, `code_presentation`, `id_student`, `week`, `y_true`, `y_score_fail`, `y_score_pass`, `y_score_distinction`
+

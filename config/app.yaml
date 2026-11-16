@@ -1,0 +1,33 @@
+# Application and Fairness Audit Configuration
+
+fairness:
+  random_seed: 42
+  n_bootstrap: 500
+  stability:
+    min_learners: 300
+    min_positives: 30
+  attributes:
+    - gender
+    - age_band
+    - region
+    - highest_education
+    - imd_band
+    - disability
+  missing_imd_band: "Unknown"
+  default_policy: "capacity_top10"
+  capacity_fraction: 0.10
+  decision_threshold: 0.035
+  min_week: 2
+  intersectional_pairs:
+    - ["gender", "age_band"]
+    - ["gender", "imd_band"]
+    - ["gender", "highest_education"]
+
+dashboard:
+  cache_dir: "reports/app_cache"
+  predictions_dir: "predictions"
+  demographics_path: "data/processed/audit_demographics.parquet"
+  shap_dir: "reports/shap"
+  official_model: "lgbm_v3"
+  official_horizon: 3
+  official_target: "label_dropout_k3"

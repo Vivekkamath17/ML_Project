@@ -1,0 +1,3 @@
+model,target_attribute,policy,selection_rate,overall_precision,overall_recall,demographic_parity_difference,equalized_odds_difference,tpr_gap,fpr_gap,note
+lgbm_v3,highest_education,Global Baseline (Top-10% Cohort),0.10018131270397679,0.08096042471042471,0.34164969450101834,0.048792142267316194,0.4611764705882353,0.4611764705882353,0.046288850008640775,Standard whole-cohort capacity cut
+lgbm_v3,highest_education,Group-Specific Thresholds (Mitigated),0.11155566300012087,0.07834001516957417,0.3681262729124236,0.052791354206671665,0.3035294117647058,0.3035294117647058,0.059267032980532486,"Tuned on 50% val split, evaluated out-of-sample on remaining 50% (measured and reduced, in-sample on val presentation)"
