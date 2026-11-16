@@ -2,6 +2,14 @@
 OULAD Early Warning & Fairness Suite - Main Streamlit Application Entrypoint.
 Run with: streamlit run app/main.py
 """
+import sys
+from pathlib import Path
+
+# Ensure repository root is on sys.path so 'app.*' imports resolve cleanly
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 import streamlit as st
 from app.data_loader import discover_prediction_inventory
 from app.components import render_sealed_test_banner
