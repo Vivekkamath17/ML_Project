@@ -63,6 +63,9 @@ st.sidebar.markdown(
     f"- **Evaluation Split**: `val (2014B)`\n"
     f"- **Test Status**: `{'Unsealed' if inventory['test_split_present'] else 'Sealed (Pending)'}`"
 )
+if st.sidebar.button("🔄 Clear App Cache", help="Clear Streamlit in-memory cache and reload all tables from disk", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
 st.sidebar.caption("OULAD College ML Project | Tanmay's Downstream Pipeline")
 
 # Render selected page view

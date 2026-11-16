@@ -578,6 +578,16 @@ def main():
     build_calibration_curves_cache()
     copy_or_link_static_reports()
     
+    # Run Phase 4 master integration for fairness, calibration & sequence trajectories
+    try:
+        import sys
+        if str(BASE_DIR) not in sys.path:
+            sys.path.insert(0, str(BASE_DIR))
+        from scripts.integrate_phase4_all_views import main as integrate_phase4_main
+        integrate_phase4_main()
+    except Exception as e:
+        print(f"Warning: Phase 4 integration encountered: {e}")
+    
     print("=" * 60)
     print("App Cache Build Completed Successfully!")
     print("=" * 60)

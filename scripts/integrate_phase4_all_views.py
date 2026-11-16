@@ -280,8 +280,12 @@ def integrate_learner_trajectories():
     logger.info(f"Saved updated learner trajectories ({traj.shape[1]} columns, {len(traj)} rows).")
 
 
-if __name__ == "__main__":
+def main():
     integrate_fairness()
     integrate_calibration()
     integrate_learner_trajectories()
     logger.info("All dashboard views successfully integrated with Phase 4 models!")
+
+
+if __name__ == "__main__":
+    main()
