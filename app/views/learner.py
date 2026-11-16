@@ -138,7 +138,14 @@ def render_learner_page():
         
         # Explainability Box (SHAP Top-5 contract)
         st.markdown("#### SHAP Top-5 Contributors")
-        shap_df = load_shap_top5("lgbm_v3", selected_student_id, inspected_week)
+        avail_shap_models = ["lgbm_v3", "xgb", "catboost", "rf", "lr_39feat_unweighted"]
+        sel_shap_model = st.selectbox(
+            "Explaining Model",
+            avail_shap_models,
+            index=0,
+            key=f"shap_model_sel_{selected_student_id}_{inspected_week}"
+        )
+        shap_df = load_shap_top5(sel_shap_model, selected_student_id, inspected_week)
         if shap_df is not None and not shap_df.empty:
             fig_shap = px.bar(
                 shap_df,
@@ -147,9 +154,12 @@ def render_learner_page():
                 orientation="h",
                 color="shap_value",
                 color_continuous_scale="RdBu_r",
-                title=f"Week {inspected_week} Top Feature Drivers"
+                title=f"Week {inspected_week} Top Feature Drivers ({sel_shap_model})"
             )
             st.plotly_chart(fig_shap, use_container_width=True)
+            st.caption(
+                "Positive values (red) increase predicted dropout risk; negative values (blue) protect against attrition."
+            )
         else:
             st.warning(
                 "⏳ **SHAP Top-5 Explanations: Pending Teammate Submission**\n\n"
