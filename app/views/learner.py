@@ -34,10 +34,14 @@ def render_learner_page():
     sub_learners = idx_df[idx_df["code_module"] == selected_module].sort_values("id_student")
     
     with col_s2:
-        filter_status = st.selectbox("Filter Outcome", ["All Learners", "Eventual Dropouts Only", "Completed / Active Only"], index=0)
+        filter_status = st.selectbox(
+            "Filter Outcome",
+            ["All Learners", "Completed / Active (With Grade Forecasts)", "Eventual Dropouts Only"],
+            index=0
+        )
         if filter_status == "Eventual Dropouts Only":
             sub_learners = sub_learners[sub_learners["is_withdrawn"] == 1]
-        elif filter_status == "Completed / Active Only":
+        elif filter_status == "Completed / Active (With Grade Forecasts)":
             sub_learners = sub_learners[sub_learners["is_withdrawn"] == 0]
             
     with col_s3:
@@ -186,21 +190,61 @@ def render_learner_page():
     score_df = load_score_forecasts(selected_student_id, selected_module)
     grade_df = load_grade_band_forecasts(selected_student_id, selected_module)
     
-    col_fc1, col_fc2 = st.columns(2)
-    with col_fc1:
-        st.markdown("#### Continuous Final Assessment Score Regression")
-        if not score_df.empty:
-            score_disp = score_df[["week", "model", "y_true", "y_pred"]].copy()
-            score_disp.columns = ["Snapshot Week", "Model", "Observed Final Score", "Predicted Final Score"]
-            st.dataframe(score_disp, use_container_width=True, hide_index=True)
-        else:
-            st.info("Continuous score forecast predictions pending or student withdrew prior to snapshot.")
-            
-    with col_fc2:
-        st.markdown("#### Multi-Class Grade Band Probability Forecast")
-        if not grade_df.empty:
-            grade_disp = grade_df[["week", "model", "y_true", "y_score_fail", "y_score_pass", "y_score_distinction"]].copy()
-            grade_disp.columns = ["Snapshot Week", "Model", "Final Grade", "P(Fail)", "P(Pass)", "P(Distinction)"]
-            st.dataframe(grade_disp, use_container_width=True, hide_index=True)
-        else:
-            st.info("Grade band probability predictions pending or student withdrew prior to snapshot.")
+    if score_df.empty and grade_df.empty:
+        st.info(
+            f"ℹ️ **No Summative Forecasts for Learner `{selected_student_id}` (Early Attrition)**\n\n"
+            "Performance forecasting models (continuous assessment score regression and multi-class grade bands) "
+            "predict final end-of-course academic outcomes evaluated at longitudinal snapshot weeks (Weeks 4, 8, and 12).\n\n"
+            "- Because this student withdrew from the module prior to completing final coursework and summative examinations, "
+            "no final exam grade or course score was awarded.\n"
+            "- **To inspect performance forecasts**: Select **'Completed / Active (With Grade Forecasts)'** in the outcome filter above "
+            "(e.g., student `27891` or `50069`) to view longitudinal score predictions and grade band probabilities across models."
+        )
+    else:
+        # Show actual observed final outcome
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            if not score_df.empty:
+                true_score = score_df["y_true"].iloc[0]
+                st.metric("Observed Final Assessment Score", f"{true_score:.1f} / 100")
+        with col_m2:
+            if not grade_df.empty:
+                true_grade = grade_df["y_true"].iloc[0]
+                st.metric("Observed Final Grade Band", str(true_grade).upper())
+                
+        col_fc1, col_fc2 = st.columns(2)
+        with col_fc1:
+            st.markdown("#### Continuous Final Assessment Score Regression")
+            if not score_df.empty:
+                # Add model filter
+                avail_score_models = sorted(score_df["model"].unique().tolist())
+                sel_score_models = st.multiselect(
+                    "Filter Score Models",
+                    options=avail_score_models,
+                    default=["lightgbm", "catboost", "random_forest", "ridge"] if "lightgbm" in avail_score_models else avail_score_models[:3],
+                    key="sel_score_models"
+                )
+                filtered_score_df = score_df[score_df["model"].isin(sel_score_models)].sort_values(["week", "model"])
+                score_disp = filtered_score_df[["week", "model", "y_true", "y_pred"]].copy()
+                score_disp["error"] = score_disp["y_pred"] - score_disp["y_true"]
+                score_disp.columns = ["Snapshot Week", "Model", "Observed Final Score", "Predicted Score", "Residual (Error)"]
+                st.dataframe(score_disp, use_container_width=True, hide_index=True)
+            else:
+                st.info("Continuous score forecast predictions pending for this learner.")
+                
+        with col_fc2:
+            st.markdown("#### Multi-Class Grade Band Probability Forecast")
+            if not grade_df.empty:
+                avail_grade_models = sorted(grade_df["model"].unique().tolist())
+                sel_grade_models = st.multiselect(
+                    "Filter Grade Models",
+                    options=avail_grade_models,
+                    default=["lightgbm", "catboost", "random_forest"] if "lightgbm" in avail_grade_models else avail_grade_models[:2],
+                    key="sel_grade_models"
+                )
+                filtered_grade_df = grade_df[grade_df["model"].isin(sel_grade_models)].sort_values(["week", "model"])
+                grade_disp = filtered_grade_df[["week", "model", "y_true", "y_score_fail", "y_score_pass", "y_score_distinction"]].copy()
+                grade_disp.columns = ["Snapshot Week", "Model", "Final Grade", "P(Fail)", "P(Pass)", "P(Distinction)"]
+                st.dataframe(grade_disp, use_container_width=True, hide_index=True)
+            else:
+                st.info("Grade band probability predictions pending for this learner.")
