@@ -35,18 +35,30 @@ def discover_prediction_inventory() -> Dict[str, Any]:
     if not PREDS_DIR.exists():
         return inventory
         
-    for p_file in PREDS_DIR.rglob("*.parquet"):
+    all_files = list(PREDS_DIR.rglob("*.parquet")) + list(PREDS_DIR.rglob("*.csv"))
+    for p_file in all_files:
         inventory["files_count"] += 1
         rel_parts = p_file.relative_to(PREDS_DIR).parts
         stem = p_file.stem
         
         # Check split
-        split = "test" if "_test" in stem else "val" if "_val" in stem else "unknown"
-        inventory["splits"].add(split)
-        if split == "test":
+        if rel_parts[0] == "test" or "_test" in stem:
+            split = "test"
             inventory["test_split_present"] = True
+        elif rel_parts[0] in ("seq", "dropout") or "_val" in stem:
+            split = "val"
+        else:
+            split = "unknown"
+        inventory["splits"].add(split)
             
-        target = rel_parts[0] if len(rel_parts) > 1 else "dropout"
+        if "onset" in stem:
+            target = "onset"
+        elif "score" in stem or "finalscore" in stem:
+            target = "score"
+        elif len(rel_parts) > 1 and rel_parts[0] in ("dropout", "onset", "grade"):
+            target = rel_parts[0]
+        else:
+            target = "dropout"
         inventory["targets"].add(target)
         
         horizon = 3

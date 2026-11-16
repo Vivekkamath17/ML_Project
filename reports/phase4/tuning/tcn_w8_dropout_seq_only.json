@@ -1,0 +1,13 @@
+{
+  "best_inner_cv_pr": 0.07735082572024252,
+  "best_params": {
+    "lr": 0.002842934503476935,
+    "weight_decay": 3.893419320414209e-06,
+    "batch_size": 512,
+    "dropout": 0.34544238795037036,
+    "channels": 64,
+    "kernel_size": 3,
+    "num_blocks": 2,
+    "pooling": "mean_last"
+  }
+}
