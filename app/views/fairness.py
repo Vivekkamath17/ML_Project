@@ -73,6 +73,23 @@ def render_fairness_page():
         labels={"value": "Disparity Magnitude", "attribute": "Attribute", "variable": "Fairness Metric"},
         title=f"Disparity Metric Comparison Across Attributes ({selected_model})"
     )
+    fig_gaps.update_layout(
+        xaxis=dict(tickangle=-25, automargin=True, title=dict(standoff=15)),
+        yaxis=dict(automargin=True, title=dict(standoff=15)),
+        height=450,
+        margin=dict(l=60, r=30, t=50, b=90),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.22,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11),
+            bgcolor="rgba(255, 255, 255, 0.7)",
+            bordercolor="rgba(200, 200, 200, 0.4)",
+            borderwidth=1
+        )
+    )
     st.plotly_chart(fig_gaps, use_container_width=True)
 
     st.markdown("---")
@@ -127,6 +144,12 @@ def render_fairness_page():
             title=f"True Positive Rate (Recall) by {selected_attr}",
             labels={"tpr": "Recall / TPR", "subgroup": selected_attr}
         )
+        fig_tpr.update_layout(
+            xaxis=dict(tickangle=-35, tickfont=dict(size=10), automargin=True, title=dict(standoff=15)),
+            yaxis=dict(automargin=True, title=dict(standoff=15)),
+            height=430,
+            margin=dict(l=60, r=20, t=50, b=110)
+        )
         st.plotly_chart(fig_tpr, use_container_width=True)
         
     with col_p2:
@@ -138,6 +161,12 @@ def render_fairness_page():
             error_y_minus=sub_metrics["selection_rate"] - sub_metrics["selection_rate_ci_low"],
             title=f"Selection Rate by {selected_attr}",
             labels={"selection_rate": "Selection Rate", "subgroup": selected_attr}
+        )
+        fig_sel.update_layout(
+            xaxis=dict(tickangle=-35, tickfont=dict(size=10), automargin=True, title=dict(standoff=15)),
+            yaxis=dict(automargin=True, title=dict(standoff=15)),
+            height=430,
+            margin=dict(l=60, r=20, t=50, b=110)
         )
         st.plotly_chart(fig_sel, use_container_width=True)
 

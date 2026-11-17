@@ -95,13 +95,37 @@ def render_cohort_page():
             x=cap_curve_data["parameter"], y=cap_curve_data["learner_recall"] * 100,
             mode="lines+markers", name="Unique Dropout Recall (%)", line=dict(color="#ff7f0e", width=2.5, dash="dash")
         ))
-        fig_cap.add_vline(x=10.0, line_dash="dot", line_color="gray", annotation_text="Default 10% Policy")
+        fig_cap.add_vline(
+            x=10.0,
+            line_dash="dot",
+            line_color="gray",
+            annotation_text="Default 10% Policy",
+            annotation_position="top right",
+            annotation=dict(
+                font=dict(size=10, color="#555555"),
+                bgcolor="rgba(255, 255, 255, 0.85)",
+                bordercolor="rgba(150, 150, 150, 0.5)",
+                borderwidth=1,
+                borderpad=3
+            )
+        )
         fig_cap.update_layout(
-            xaxis_title="Weekly Caseload Capacity (Top-X%)",
-            yaxis_title="Metric (%)",
+            xaxis=dict(title=dict(text="Weekly Caseload Capacity (Top-X%)", standoff=15), automargin=True),
+            yaxis=dict(title=dict(text="Metric (%)", standoff=15), automargin=True),
             hovermode="x unified",
-            margin=dict(l=40, r=40, t=30, b=40),
-            legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+            height=460,
+            margin=dict(l=60, r=30, t=40, b=90),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.22,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=11),
+                bgcolor="rgba(255, 255, 255, 0.7)",
+                bordercolor="rgba(200, 200, 200, 0.4)",
+                borderwidth=1
+            )
         )
         st.plotly_chart(fig_cap, use_container_width=True)
 
@@ -147,6 +171,13 @@ def render_cohort_page():
                 title="Distribution of Peak Predicted Risk per Student",
                 color_discrete_map={1: "#d62728", 0: "#1f77b4"}
             )
+            fig_hist.update_layout(
+                xaxis=dict(title=dict(text="Peak Predicted Dropout Probability", standoff=15), automargin=True),
+                yaxis=dict(title=dict(text="Learner Count", standoff=15), automargin=True),
+                margin=dict(l=50, r=20, t=50, b=80),
+                height=420,
+                legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5, font=dict(size=11))
+            )
             st.plotly_chart(fig_hist, use_container_width=True)
             
         with col_h2:
@@ -163,5 +194,11 @@ def render_cohort_page():
                 text="Total",
                 title="Enrolled Learners by Course Module",
                 labels={"code_module": "Module", "Total": "Enrolled Learners"}
+            )
+            fig_bar.update_layout(
+                xaxis=dict(title=dict(text="Module", standoff=15), automargin=True),
+                yaxis=dict(title=dict(text="Enrolled Learners", standoff=15), automargin=True),
+                margin=dict(l=50, r=20, t=50, b=60),
+                height=420
             )
             st.plotly_chart(fig_bar, use_container_width=True)

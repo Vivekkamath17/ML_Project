@@ -62,12 +62,23 @@ def plot_roc_curves(curves_df: pd.DataFrame, selected_models: List[str]) -> go.F
             ))
             
     fig.update_layout(
-        title="Validation ROC Curves (2014B, weeks >= 2)",
-        xaxis_title="False Positive Rate (1 - Specificity)",
-        yaxis_title="True Positive Rate (Recall)",
+        title=dict(text="Validation ROC Curves (2014B, weeks >= 2)", font=dict(size=15)),
+        xaxis=dict(title=dict(text="False Positive Rate (1 - Specificity)", standoff=15), range=[-0.02, 1.02], automargin=True),
+        yaxis=dict(title=dict(text="True Positive Rate (Recall)", standoff=15), range=[-0.02, 1.02], automargin=True),
         hovermode="x unified",
-        margin=dict(l=40, r=40, t=50, b=40),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+        height=480,
+        margin=dict(l=60, r=30, t=50, b=100),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.22,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11),
+            bgcolor="rgba(255, 255, 255, 0.7)",
+            bordercolor="rgba(200, 200, 200, 0.4)",
+            borderwidth=1,
+        )
     )
     return fig
 
@@ -104,12 +115,23 @@ def plot_pr_curves(curves_df: pd.DataFrame, selected_models: List[str], base_rat
             ))
             
     fig.update_layout(
-        title="Validation Precision-Recall Curves (Primary Ranking Metric)",
-        xaxis_title="Recall (Sensitivity)",
-        yaxis_title="Precision (PPV)",
+        title=dict(text="Validation Precision-Recall Curves (Primary Ranking Metric)", font=dict(size=15)),
+        xaxis=dict(title=dict(text="Recall (Sensitivity)", standoff=15), range=[-0.02, 1.02], automargin=True),
+        yaxis=dict(title=dict(text="Precision (PPV)", standoff=15), range=[-0.02, 1.02], automargin=True),
         hovermode="x unified",
-        margin=dict(l=40, r=40, t=50, b=40),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+        height=480,
+        margin=dict(l=60, r=30, t=50, b=100),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.22,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11),
+            bgcolor="rgba(255, 255, 255, 0.7)",
+            bordercolor="rgba(200, 200, 200, 0.4)",
+            borderwidth=1,
+        )
     )
     return fig
 
@@ -164,20 +186,44 @@ def plot_learner_trajectory(
     fig.add_hline(
         y=0.035, line_dash="dot", line_color="gray",
         annotation_text="Nominal weekly threshold (~0.035)",
-        annotation_position="bottom right"
+        annotation_position="top left",
+        annotation=dict(
+            font=dict(size=10, color="#555555"),
+            bgcolor="rgba(255, 255, 255, 0.85)",
+            bordercolor="rgba(150, 150, 150, 0.5)",
+            borderwidth=1,
+            borderpad=3
+        )
     )
     
     status_text = "WITHDRAWN" if withdrawn else "COMPLETED / ACTIVE"
     status_color = "red" if withdrawn else "green"
     
     fig.update_layout(
-        title=f"Learner {student_id} (Module {module}) Risk Trajectory | True Outcome: <span style='color:{status_color}'>{status_text}</span>",
-        xaxis_title="Course Week (Observed History)",
-        yaxis_title="Predicted 3-Week Dropout Probability",
-        yaxis_range=[0, max(0.25, traj_df[prob_cols].max().max() * 1.15) if not traj_df.empty else 1.0],
+        title=dict(
+            text=f"Learner {student_id} ({module}) Risk Trajectory — True Outcome: <span style='color:{status_color}'><b>{status_text}</b></span>",
+            font=dict(size=15)
+        ),
+        xaxis=dict(title=dict(text="Course Week (Observed History)", standoff=15), automargin=True, dtick=2),
+        yaxis=dict(
+            title=dict(text="Predicted 3-Week Dropout Probability", standoff=15),
+            range=[0, max(0.25, traj_df[prob_cols].max().max() * 1.15) if not traj_df.empty else 1.0],
+            automargin=True
+        ),
         hovermode="x unified",
-        margin=dict(l=40, r=40, t=50, b=40),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+        height=520,
+        margin=dict(l=60, r=30, t=60, b=130),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.22,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11),
+            bgcolor="rgba(255, 255, 255, 0.7)",
+            bordercolor="rgba(200, 200, 200, 0.4)",
+            borderwidth=1
+        )
     )
     return fig
 
@@ -216,12 +262,21 @@ def plot_reliability_diagram(rel_df: pd.DataFrame, selected_models: List[str]) -
             ))
             
     fig.update_layout(
-        title="Calibration Reliability Diagram (Val 2014B)",
-        xaxis_title="Mean Predicted Probability (Bin)",
-        yaxis_title="Observed Empirical Dropout Rate",
-        xaxis_range=[0, 0.35],
-        yaxis_range=[0, 0.35],
-        margin=dict(l=40, r=40, t=50, b=40),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5)
+        title=dict(text="Calibration Reliability Diagram (Val 2014B)", font=dict(size=15)),
+        xaxis=dict(title=dict(text="Mean Predicted Probability (Bin)", standoff=15), range=[0, 0.35], automargin=True),
+        yaxis=dict(title=dict(text="Observed Empirical Dropout Rate", standoff=15), range=[0, 0.35], automargin=True),
+        height=500,
+        margin=dict(l=60, r=30, t=60, b=120),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.22,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11),
+            bgcolor="rgba(255, 255, 255, 0.7)",
+            bordercolor="rgba(200, 200, 200, 0.4)",
+            borderwidth=1
+        )
     )
     return fig

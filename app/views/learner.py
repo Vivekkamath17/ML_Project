@@ -156,6 +156,12 @@ def render_learner_page():
                 color_continuous_scale="RdBu_r",
                 title=f"Week {inspected_week} Top Feature Drivers ({sel_shap_model})"
             )
+            fig_shap.update_layout(
+                yaxis=dict(automargin=True, title=dict(standoff=10)),
+                xaxis=dict(automargin=True, title=dict(standoff=10)),
+                margin=dict(l=80, r=20, t=50, b=50),
+                height=350,
+            )
             st.plotly_chart(fig_shap, use_container_width=True)
             st.caption(
                 "Positive values (red) increase predicted dropout risk; negative values (blue) protect against attrition."

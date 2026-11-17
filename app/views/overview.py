@@ -106,6 +106,13 @@ def render_overview_page():
             title="Paired ΔPR-AUC with 95% Bootstrap Confidence Intervals"
         )
         delta_fig.add_hline(y=0.0, line_dash="dash", line_color="black")
+        delta_fig.update_layout(
+            xaxis=dict(tickangle=-35, tickfont=dict(size=10), automargin=True, title=dict(standoff=15)),
+            yaxis=dict(automargin=True, title=dict(standoff=15)),
+            margin=dict(l=60, r=20, t=50, b=110),
+            height=460,
+            legend=dict(orientation="h", yanchor="top", y=-0.28, xanchor="center", x=0.5, font=dict(size=11))
+        )
         st.plotly_chart(delta_fig, use_container_width=True)
         
     with col_d2:
@@ -131,7 +138,27 @@ def render_overview_page():
                 labels={"value": "Metric Value", "week": "Course Week", "variable": "Metric"},
                 title="Weekly Attrition Prediction Quality (Early Weeks vs Late)"
             )
-            fig_week.add_vline(x=2, line_dash="dot", annotation_text="Official Eval Start (Week 2)")
+            fig_week.add_vline(
+                x=2,
+                line_dash="dot",
+                line_color="gray",
+                annotation_text="Official Eval Start (Week 2)",
+                annotation_position="top right",
+                annotation=dict(
+                    font=dict(size=10, color="#555555"),
+                    bgcolor="rgba(255, 255, 255, 0.85)",
+                    bordercolor="rgba(150, 150, 150, 0.5)",
+                    borderwidth=1,
+                    borderpad=3
+                )
+            )
+            fig_week.update_layout(
+                xaxis=dict(automargin=True, title=dict(standoff=15)),
+                yaxis=dict(automargin=True, title=dict(standoff=15)),
+                margin=dict(l=50, r=20, t=50, b=80),
+                height=420,
+                legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5, font=dict(size=11))
+            )
             st.plotly_chart(fig_week, use_container_width=True)
             st.caption("Weeks 0–1 reflect initial orientation window (low signal). Attrition signal peaks around weeks 3–5 and stabilizes.")
             
@@ -145,6 +172,13 @@ def render_overview_page():
                 color="train_status",
                 labels={"roc_auc": "ROC-AUC", "code_module": "Module", "train_status": "Train Split Status"},
                 title="ROC-AUC Generalization Across Modules"
+            )
+            fig_mod.update_layout(
+                xaxis=dict(automargin=True, title=dict(standoff=15)),
+                yaxis=dict(automargin=True, title=dict(standoff=15)),
+                margin=dict(l=50, r=20, t=50, b=80),
+                height=420,
+                legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5, font=dict(size=11))
             )
             st.plotly_chart(fig_mod, use_container_width=True)
             st.caption("Module CCC was completely unseen in training (zero-shot transfer: ROC-AUC = 0.732).")
